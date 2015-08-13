@@ -84,7 +84,24 @@ class Parser
     public function makeHtml($text)
     {
         $html = $this->parse($text);
+        return $this->makeFootnotes($html);
+    }
 
+    /**
+     * @param $type
+     * @param $callback
+     */
+    public function hook($type, $callback)
+    {
+        $this->_hooks[$type][] = $callback;
+    }
+
+    /**
+     * @param $html
+     * @return string
+     */
+    private function makeFootnotes($html)
+    {
         if (count($this->_footnootes) > 0) {
             $html .= '<div class="footnotes"><hr><ol>';
             $index = 1;
@@ -114,7 +131,7 @@ class Parser
      * @param string $text
      * @return string
      */
-    public function parse($text)
+    private function parse($text)
     {
         $blocks = $this->parseBlock($text, $lines, $this->_parseDefinition);
         $this->_parseDefinition = false; 
@@ -137,19 +154,10 @@ class Parser
 
     /**
      * @param $type
-     * @param $callback
-     */
-    public function hook($type, $callback)
-    {
-        $this->_hooks[$type][] = $callback;
-    }
-
-    /**
-     * @param $type
      * @param $value
      * @return mixed
      */
-    public function call($type, $value)
+    private function call($type, $value)
     {
         if (empty($this->_hooks[$type])) {
             return $value;
