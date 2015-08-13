@@ -1,0 +1,12 @@
+{
+    "name": "joyqi/hyper-down",
+    "description": "A light weight markdown parser library",
+    "license": "BSD",
+    "authors": [
+        {
+            "name": "joyqi",
+            "email": "joyqi@segmentfault.com"
+        }
+    ],
+    "require": {}
+}

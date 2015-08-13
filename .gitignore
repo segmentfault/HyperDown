@@ -29,3 +29,5 @@ config.codekit
 npm-debug.log
 *.log
 *.iml
+
+/vendor/
