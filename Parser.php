@@ -421,7 +421,6 @@ class Parser
                 if (preg_match("/^\s*$/", $line)) {
                     continue;
                 } else if (preg_match("/^\s*\[((?:[^\]]|\\]|\\[)+?)\]:\s*(.+)$/i", $line, $matches)) {
-                    print_r($matches);
                     $found = true;
                     $this->_definitions[$matches[1]] = $matches[2];
                 } else {
@@ -430,7 +429,9 @@ class Parser
                 }
             }
 
-            $this->backBlock($step, 'define');
+            if ($found) {
+                $this->backBlock($step, 'define');
+            }
         }
 
         return $this->_blocks;
