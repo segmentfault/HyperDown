@@ -16,7 +16,7 @@ class Parser
      * 
      * @var string
      */
-    private $_commonWhiteList = 'kbd|b|i|strong|em|sup|sub|br|code|del|a';
+    private $_commonWhiteList = 'kbd|b|i|strong|em|sup|sub|br|code|del|a|hr';
 
     /**
      * _specialWhiteList 
