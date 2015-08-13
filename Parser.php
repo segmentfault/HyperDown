@@ -29,11 +29,11 @@ class Parser
     ];
 
     /**
-     * _footnootes 
+     * _footnotes
      * 
      * @var array
      */
-    private $_footnootes = [];
+    private $_footnotes = [];
 
     /**
      * _blocks
@@ -102,11 +102,11 @@ class Parser
      */
     private function makeFootnotes($html)
     {
-        if (count($this->_footnootes) > 0) {
+        if (count($this->_footnotes) > 0) {
             $html .= '<div class="footnotes"><hr><ol>';
             $index = 1;
 
-            while ($val = array_pop($this->_footnootes)) {
+            while ($val = array_pop($this->_footnotes)) {
                 if (is_string($val)) {
                     $val .= " <a href=\"#fnref-{$index}\" class=\"footnote-backref\">&#8617;</a>";
                 } else {
@@ -215,11 +215,11 @@ class Parser
 
         // footnote
         $text = preg_replace_callback("/\[\^((?:[^\]]|\\]|\\[)+?)\]/", function ($matches) {
-            $id = array_search($matches[1], $this->_footnootes);
+            $id = array_search($matches[1], $this->_footnotes);
 
             if (false === $id) {
-                $id = count($this->_footnootes) + 1;
-                $this->_footnootes[$id] = $matches[1];
+                $id = count($this->_footnotes) + 1;
+                $this->_footnotes[$id] = $matches[1];
             }
 
             return "<sup id=\"fnref-{$id}\"><a href=\"#fn-{$id}\" class=\"footnote-ref\">{$id}</a></sup>";
@@ -691,11 +691,11 @@ class Parser
     private function parseFootnote(array $lines, array $value)
     {
         list($space, $note) = $value;
-        $index = array_search($note, $this->_footnootes);
+        $index = array_search($note, $this->_footnotes);
 
         if (false !== $index) {
             $lines[0] = preg_replace("/^\[\^((?:[^\]]|\\]|\\[)+?)\]:/", '', $lines[0]);
-            $this->_footnootes[$index] = $lines;
+            $this->_footnotes[$index] = $lines;
         }
 
         return '';
