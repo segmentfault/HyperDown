@@ -1,7 +1,7 @@
 为何要写这样一个解析器
 ======================
 
-Markdown已经面世许多年了，国内外许多大大小小的文章都在用它，但是它的解析器却依然混乱不堪。SegmentFault 是中国较大规模使用 Markdown 语法的网站，我们一直在使用一些开源类库，包括但不限于
+Markdown已经面世许多年了，国内外许多大大小小的网站都在用它，但是它的解析器却依然混乱不堪。SegmentFault 是中国较大规模使用 Markdown 语法的网站，我们一直在使用一些开源类库，包括但不限于
 
 1. [php-markdown](https://github.com/michelf/php-markdown)
 2. [CommonMark for PHP](https://github.com/thephpleague/commonmark)
