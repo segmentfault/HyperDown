@@ -71,6 +71,11 @@ class Parser
     private $_parseDefinition = true;
 
     /**
+     * @var array
+     */
+    private $_hooks = [];
+
+    /**
      * makeHtml  
      * 
      * @param mixed $text 
@@ -120,10 +125,45 @@ class Parser
             $extract = array_slice($lines, $start, $end - $start + 1);
             $method = 'parse' . ucfirst($type);
 
-            $html .= $this->{$method}($extract, $value);
+            $extract = $this->call('before' . ucfirst($method), $extract, $value);
+            $result = $this->{$method}($extract, $value);
+            $result = $this->call('after' . ucfirst($method), $result, $value);
+
+            $html .= $result;
         }
         
         return $html;
+    }
+
+    /**
+     * @param $type
+     * @param $callback
+     */
+    public function hook($type, $callback)
+    {
+        $this->_hooks[$type][] = $callback;
+    }
+
+    /**
+     * @param $type
+     * @param $value
+     * @return mixed
+     */
+    public function call($type, $value)
+    {
+        if (empty($this->_hooks[$type])) {
+            return $value;
+        }
+
+        $args = func_get_args();
+        $args = array_slice($args, 1);
+
+        foreach ($this->_hooks[$type] as $callback) {
+            $value = call_user_func_array($callback, $args);
+            $args[0] = $value;
+        }
+
+        return $value;
     }
 
     /**
@@ -138,6 +178,8 @@ class Parser
         $id = 0;
         $uniqid = md5(uniqid());
         $codes = [];
+
+        $text = $this->call('beforeParseInline', $text);
 
         // code
         $text = preg_replace_callback("/`(.+?)`/", function ($matches) use (&$id, &$codes, $uniqid) {
@@ -213,6 +255,8 @@ class Parser
 
         // release
         $text = str_replace(array_keys($codes), array_values($codes), $text);
+
+        $text = $this->call('afterParseInline', $text);
 
         return $text;
     }
