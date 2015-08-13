@@ -465,7 +465,7 @@ class Parser
             $line = htmlspecialchars(substr($line, 4));
         }
 
-        return '<code><pre>' . implode("\n", $lines) . '</pre></code>';
+        return '<pre><code>' . implode("\n", $lines) . '</code></pre>';
     }
 
     /**
