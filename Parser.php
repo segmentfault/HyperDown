@@ -47,7 +47,7 @@ class Parser
      * 
      * @var string
      */
-    private $_current = '';
+    private $_current = 'normal';
 
     /**
      * _pos  
@@ -350,6 +350,43 @@ class Parser
                     }
                     break;
 
+                // table
+                case preg_match("/^(\|?)([\-\|:\+ ]+?)\\1$/", $line, $matches):
+                    if ($this->isBlock('normal')) {
+                        $block = $this->getBlock();
+                        $head = false;
+
+                        if (empty($block) ||
+                            $block[0] != 'normal' ||
+                            preg_match("/^\s*$/", $lines[$block[2]])) {
+                            $this->startBlock('table', $key);
+                        } else {
+                            $head = true;
+                            $this->backBlock(1, 'table');
+                        }
+
+                        $rows = preg_split("/(\+|\|)/", $matches[2]);
+                        $aligns = [];
+                        foreach ($rows as $row) {
+                            $align = 'none';
+
+                            if (preg_match("/^\s*(:?)\-+(:?)\s*$/", $row, $matches)) {
+                                if (!empty($matches[1]) && !empty($matches[2])) {
+                                    $align = 'center';
+                                } else if (!empty($matches[1])) {
+                                    $align = 'left';
+                                } else if (!empty($matches[2])) {
+                                    $align = 'right';
+                                }
+                            }
+
+                            $aligns[] = $align;
+                        }
+
+                        $this->setBlock($key, [$head, $aligns]);
+                    }
+                    break;
+
                 // single heading
                 case preg_match("/^(#+)(.*)$/", $line, $matches):
                     $num = min(strlen($matches[1]), 6);
@@ -397,6 +434,12 @@ class Parser
                         preg_match("/^(\s*)/", $line, $matches);
 
                         if (strlen($matches[1]) >= $this->getBlock()[3][0]) {
+                            $this->setBlock($key);
+                        } else {
+                            $this->startBlock('normal', $key);
+                        }
+                    } else if ($this->isBlock('table')) {
+                        if (false !== strpos($line, '|')) {
                             $this->setBlock($key);
                         } else {
                             $this->startBlock('normal', $key);
@@ -609,6 +652,81 @@ class Parser
     }
 
     /**
+     * @param array $lines
+     * @param array $value
+     * @return string
+     */
+    private function parseTable(array $lines, array $value)
+    {
+        list ($head, $aligns) = $value;
+        $ignore = $head ? 1 : 0;
+
+        $html = '<table>';
+        $body = NULL;
+
+        foreach ($lines as $key => $line) {
+            if ($key == $ignore) {
+                $head = false;
+                $body = true;
+                continue;
+            }
+
+            $line = preg_replace("/^(\|?)(.*?)\\1$/", "\\2", $line);
+            $rows = array_map('trim', explode('|', $line));
+            $columns = [];
+            $last = -1;
+
+            foreach ($rows as $row) {
+                if (strlen($row) > 0) {
+                    $last ++;
+                    $columns[$last] = [1, $row];
+                } else if (isset($columns[$last])) {
+                    $columns[$last][0] ++;
+                }
+            }
+
+            if ($head) {
+                $html .= '<thead>';
+            } else if ($body) {
+                $html .= '<tbody>';
+            }
+
+            $html .= '<tr>';
+
+            foreach ($columns as $key => $column) {
+                list ($num, $text) = $column;
+                $tag = $head ? 'th' : 'td';
+
+                $html .= "<{$tag}";
+                if ($num > 1) {
+                    $html .= " colspan=\"{$num}\"";
+                }
+
+                if (isset($aligns[$key]) && $aligns[$key] != 'none') {
+                    $html .= " align=\"{$aligns[$key]}\"";
+                }
+
+                $html .= '>' . $this->parseInline($text) . "</{$tag}>";
+            }
+
+            $html .= '</tr>';
+
+            if ($head) {
+                $html .= '</thead>';
+            } else if ($body) {
+                $body = false;
+            }
+        }
+
+        if ($body !== NULL) {
+            $html .= '</tbody>';
+        }
+
+        $html .= '</table>';
+        return $html;
+    }
+
+    /**
      * parseHr 
      * 
      * @return string
@@ -775,6 +893,10 @@ class Parser
      */
     private function backBlock($step, $type, $value = NULL)
     {
+        if ($this->_pos < 0) {
+            return $this->startBlock($type, 0, $value);
+        }
+
         $last = $this->_blocks[$this->_pos][2];
         $this->_blocks[$this->_pos][2] = $last - $step;
 
