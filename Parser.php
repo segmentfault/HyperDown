@@ -545,128 +545,65 @@ class Parser
     private function parseList(array $lines)
     {
         $html = '';
-        $levels = [];
-        $map = [];
-        $lastSpace = 0;
-        $uniqid = md5(uniqid());
+        $minSpace = 99999;
+        $rows = [];
 
         // count levels
-        foreach ($lines as $line) {
-            $count = 0;
-            $type = NULL;
-
+        foreach ($lines as $key => $line) {
             if (preg_match("/^(\s*)((?:[0-9a-z]\.?)|\-|\+|\*)(\s+)(.*)$/", $line, $matches)) {
-                $count = strlen($matches[1]);
-                $type = false !== strpos('-+*', $matches[2]) ? 'ul' : 'ol';
-                $line = $matches[4];
-                $lastSpace = strlen($matches[1] . $matches[2] . $matches[3]);
-            } else {
-                $line = substr($line, $lastSpace);
+                $space = strlen($matches[1]);
+                $type = false !== strpos('+-*', $matches[2]) ? 'ul' : 'ol';
+                $minSpace = min($space, $minSpace);
 
-                // attach to last map
-                $lastMapIndex = count($map) - 1;
-                if (is_array($map[$lastMapIndex][2])) {
-                    $map[$lastMapIndex][2][] = $line;
+                $rows[] = [$space, $type, $line, $matches[4]];
+            } else {
+                $rows[] = $line;
+            }
+        }
+
+        $found = false;
+        $secondMinSpace = 99999;
+        foreach ($rows as $row) {
+            if (is_array($row) && $row[0] != $minSpace) {
+                $secondMinSpace = min($secondMinSpace, $row[0]);
+                $found = true;
+            }
+        }
+        $secondMinSpace = $found ?: $minSpace;
+
+        $lastType = '';
+        $leftLines = [];
+
+        foreach ($rows as $row) {
+            if (is_array($row)) {
+                list ($space, $type, $line, $text) = $row;
+
+                if ($space != $minSpace) {
+                    $leftLines[] = preg_replace("/^\s{" . $secondMinSpace . "}/", '', $line);
                 } else {
-                    $map[$lastMapIndex][2] = [
-                        $map[$lastMapIndex][2],
-                        $line
-                    ];
+                    if ($lastType != $type) {
+                        if (!empty($lastType)) {
+                            $html .= "</{$lastType}>";
+                        }
+
+                        $html .= "<{$type}>";
+                    }
+
+                    if (!empty($leftLines)) {
+                        $html .= "<li>" . $this->parse(implode("\n", $leftLines)) . "</li>";
+                    }
+
+                    $leftLines = [$text];
+                    $lastType = $type;
                 }
-                
-                continue;
-            }
-                
-            $levels[$count] = 0;
-            $map[] = [$count, $type, $line];
-        }
-
-        // blance level
-        $levels = array_keys($levels);
-        sort($levels);
-        $levels = array_map(function ($level) {
-            return $level + 1;
-        }, array_flip($levels));
-        
-        // place temp tag
-        foreach ($map as $key => $item) {
-            list ($count, $type, $line) = $item;
-            $level = $levels[$count];
-
-            $lastLevel = 0;
-            $lastType = $type;
-            $nextLevel = 0;
-            $nextType = $type;
-
-            if (isset($map[$key - 1])) {
-                $lastLevel = $levels[$map[$key - 1][0]];
-                $lastType = $map[$key - 1][1];
-            }
-
-            if (isset($map[$key + 1])) {
-                $nextLevel = $levels[$map[$key + 1][0]];
-                $nextType = $map[$key + 1][1];
-            }
-            
-            $line = is_array($line) ? $this->parse(implode("\n", $line)) : $this->parseInline($line);
-
-            for ($i = 0; $i < $level - $lastLevel - 1; $i ++) {
-                $html .= ($i + $lastLevel > 1 ? '<li>' : '') . '<xl>';
-            }
-
-            $html .= str_repeat("<xl>", max(0, $level - $lastLevel - 1)) 
-                . ($level > 1 ? '<li>' : '')
-                . ($level > $lastLevel || ($level == $lastLevel && $type != $lastType) ? "<{$type}>" : '')
-                . "<li>{$line}</li>" 
-                . ($level > $nextLevel || ($level == $lastLevel && $type != $nextType) ? "</{$type}>" : '')
-                . ($level > 1 ? '</li>' : '');
-
-            for ($i = $level - $nextLevel - 1; $i > 0; $i --) {
-                $html .= '</xl>' . ($i + $nextLevel > 1 ? '</li>' : '');
-            }
-        }
-
-        // find close tag
-        $stack = [];
-        $lastTag = '';
-
-        while (preg_match("/<\/(ul|ol|xl)>/", $html, $matches, PREG_OFFSET_CAPTURE)) {
-            $sub = substr($html, 0, $matches[0][1]);
-
-            $pos = max(strrpos($sub, '<ul>'),
-                strrpos($sub, '<ol>'),
-                strrpos($sub, '<xl>'));
-
-            $tag = substr($sub, $pos + 1, 2);
-
-            if ($matches[1][0] != 'xl' && $tag == 'xl') {
-                $html = substr_replace($html, $matches[1][0], $pos + 1, 2);
-                $lastTag = $matches[1][0];
-            } else if ($matches[1][0] == 'xl' && $tag != 'xl') {
-                $html = substr_replace($html, $tag, $matches[1][1], 2);
-                $lastTag = $tag;
-            } else if ($matches[1][0] == 'xl' && $tag == 'xl') {
-                $lastTag = empty($lastTag) ? 'ul' : $lastTag;
-                $html = substr_replace($html, $lastTag, $pos + 1, 2);
-                $html = substr_replace($html, $lastTag, $matches[1][1], 2);
             } else {
-                $lastTag = $tag;
+                $leftLines[] = preg_replace("/^\s{" . $secondMinSpace . "}/", '', $row);
             }
-
-            $id = '|' . $uniqid . count($stack) . '|';
-            $stack[$id] = substr($html, $pos, $matches[1][1] - $pos + 4 - 1);
-            $html = substr_replace($html, $id, $pos, $matches[1][1] - $pos + 4 - 1);
         }
 
-        do {
-            $found = false;
-            foreach ($stack as $key => $val) {
-                $html = str_replace($key, $val, $html, $count);
-                if ($count > 0) {
-                    $found = true;
-                }
-            }
-        } while ($found);
+        if (!empty($leftLines)) {
+            $html .= "<li>" . $this->parse(implode("\n", $leftLines)) . "</li></{$lastType}>";
+        }
 
         return $html;
     }
