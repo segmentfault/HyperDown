@@ -16,7 +16,7 @@ class Parser
      * 
      * @var string
      */
-    private $_commonWhiteList = 'kbd|b|i|strong|em|sup|sub|br|code|del|a|hr';
+    private $_commonWhiteList = 'kbd|b|i|strong|em|sup|sub|br|code|del|a|hr|small';
 
     /**
      * _specialWhiteList 
@@ -182,7 +182,7 @@ class Parser
         $text = $this->call('beforeParseInline', $text);
 
         // code
-        $text = preg_replace_callback("/`(.+?)`/", function ($matches) use (&$id, &$codes, $uniqid) {
+        $text = preg_replace_callback("/(?:^|[^\\\])`(.+?)`/", function ($matches) use (&$id, &$codes, $uniqid) {
             $key = '|' . $uniqid . $id . '|';
             $codes[$key] = '<code>' . htmlspecialchars($matches[1]) . '</code>';
             $id ++;
@@ -190,7 +190,7 @@ class Parser
             return $key;
         }, $text);
 
-        // escape
+        // encode unsafe tags
         $text = preg_replace_callback("/<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/i", function ($matches) use ($whiteList) {
             if (stripos($this->_commonWhiteList . '|' . $whiteList, $matches[2]) !== false) {
                 return $matches[0];
@@ -198,12 +198,6 @@ class Parser
                 return htmlspecialchars($matches[0]);
             }
         }, $text);
-
-        // strong and em and some fuck
-        $text = preg_replace("/(_|\*){3}(.+?)\\1{3}/", "<strong><em>\\2</em></strong>", $text);
-        $text = preg_replace("/(_|\*){2}(.+?)\\1{2}/", "<strong>\\2</strong>", $text);
-        $text = preg_replace("/(_|\*)(.+?)\\1/", "<em>\\2</em>", $text);
-        $text = preg_replace("/<(https?:\/\/.+)>/i", "<a href=\"\\1\">\\1</a>", $text);
 
         // footnote
         $text = preg_replace_callback("/\[\^((?:[^\]]|\\]|\\[)+?)\]/", function ($matches) {
@@ -247,7 +241,22 @@ class Parser
             } else {
                 return $escaped;
             }
-        }, $text); 
+        }, $text);
+
+        // escape
+        $text = preg_replace_callback("/\\\(`|\*|_)/", function ($matches) use (&$id, &$codes, $uniqid) {
+            $key = '|' . $uniqid . $id . '|';
+            $codes[$key] = htmlspecialchars($matches[1]);
+            $id ++;
+
+            return $key;
+        }, $text);
+
+        // strong and em and some fuck
+        $text = preg_replace("/(_|\*){3}(.+?)\\1{3}/", "<strong><em>\\2</em></strong>", $text);
+        $text = preg_replace("/(_|\*){2}(.+?)\\1{2}/", "<strong>\\2</strong>", $text);
+        $text = preg_replace("/(_|\*)(.+?)\\1/", "<em>\\2</em>", $text);
+        $text = preg_replace("/<(https?:\/\/.+)>/i", "<a href=\"\\1\">\\1</a>", $text);
 
         // autolink
         $text = preg_replace("/(^|[^\"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,]+)($|[^\"])/i",
