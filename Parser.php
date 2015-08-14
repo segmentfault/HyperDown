@@ -275,6 +275,7 @@ class Parser
         $this->_current = '';
         $this->_pos = -1;
         $special = implode("|", array_keys($this->_specialWhiteList));
+        $emptyCount = 0;
 
         // analyze by line
         foreach ($lines as $key => $line) {
@@ -319,6 +320,7 @@ class Parser
                 // list
                 case preg_match("/^(\s*)((?:[0-9a-z]\.?)|\-|\+|\*)\s+/", $line, $matches):
                     $space = strlen($matches[1]);
+                    $emptyCount = 0;
 
                     // opened
                     if ($this->isBlock('list')) {
@@ -434,7 +436,15 @@ class Parser
                     if ($this->isBlock('list')) {
                         preg_match("/^(\s*)/", $line, $matches);
 
-                        if (strlen($matches[1]) >= $this->getBlock()[3]) {
+                        if (strlen($line) == strlen($matches[1])) { // empty line
+                            if ($emptyCount > 0) {
+                                $this->startBlock('normal', $key);
+                            } else {
+                                $this->setBlock($key);
+                            }
+
+                            $emptyCount ++;
+                        } else if (strlen($matches[1]) >= $this->getBlock()[3] && $emptyCount == 0) {
                             $this->setBlock($key);
                         } else {
                             $this->startBlock('normal', $key);
