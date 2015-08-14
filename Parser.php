@@ -351,7 +351,7 @@ class Parser
                     break;
 
                 // table
-                case preg_match("/^(\|?)([\-\|:\+ ]+?)\\1$/", $line, $matches):
+                case preg_match("/^((?:(?:(?:[ :]*\-[ :]*)+(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-[ :]*)+)|(?:(?:[ :]*\-[ :]*)+(?:\||\+)(?:[ :]*\-[ :]*)+))+)$/", $line, $matches):
                     if ($this->isBlock('normal')) {
                         $block = $this->getBlock();
                         $head = false;
@@ -365,7 +365,15 @@ class Parser
                             $this->backBlock(1, 'table');
                         }
 
-                        $rows = preg_split("/(\+|\|)/", $matches[2]);
+                        if ($matches[1][0] == '|') {
+                            $matches[1] = substr($matches[1], 1);
+
+                            if ($matches[1][strlen($matches[1]) - 1] == '|') {
+                                $matches[1] = substr($matches[1], 0, -1);
+                            }
+                        }
+
+                        $rows = preg_split("/(\+|\|)/", $matches[1]);
                         $aligns = [];
                         foreach ($rows as $row) {
                             $align = 'none';
@@ -395,7 +403,8 @@ class Parser
                     break;
 
                 // multi heading
-                case preg_match("/^\s*((=|-){2,})\s*$/", $line, $matches):
+                case preg_match("/^\s*((=|-){2,})\s*$/", $line, $matches)
+                    && ($this->getBlock() && !preg_match("/^\s*$/", $lines[$this->getBlock()[2]])):    // check if last line isn't empty
                     if ($this->isBlock('normal')) {
                         $this->backBlock(1, 'mh', $matches[1][0] == '=' ? 1 : 2)
                             ->setBlock($key)
@@ -669,6 +678,13 @@ class Parser
                 $head = false;
                 $body = true;
                 continue;
+            }
+
+            if ($line[0] == '|') {
+                $line = substr($line, 1);
+                if ($line[strlen($line) - 1] == '|') {
+                    $line = substr($line, 0, -1);
+                }
             }
 
             $line = preg_replace("/^(\|?)(.*?)\\1$/", "\\2", $line);
