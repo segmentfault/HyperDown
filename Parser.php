@@ -64,13 +64,6 @@ class Parser
     private $_definitions = [];
 
     /**
-     * _parseDefinition  
-     * 
-     * @var bool
-     */
-    private $_parseDefinition = true;
-
-    /**
      * @var array
      */
     private $_hooks = [];
@@ -133,8 +126,7 @@ class Parser
      */
     private function parse($text)
     {
-        $blocks = $this->parseBlock($text, $lines, $this->_parseDefinition);
-        $this->_parseDefinition = false; 
+        $blocks = $this->parseBlock($text, $lines);
         $html = '';
 
         foreach ($blocks as $block) {
@@ -227,12 +219,12 @@ class Parser
 
         // image
         $text = preg_replace_callback("/!\[((?:[^\]]|\\]|\\[)+?)\]\(([^\)]+)\)/", function ($matches) {
-            $escaped = str_replace(['\[', '\]'], ['[', ']'], $matches[1]);
+            $escaped = $this->escapeBracket($matches[1]);
             return "<img src=\"{$matches[2]}\" alt=\"{$escaped}\" title=\"{$escaped}\">";
         }, $text);
 
         $text = preg_replace_callback("/!\[((?:[^\]]|\\]|\\[)+?)\]\[((?:[^\]]|\\]|\\[)+)\]/", function ($matches) {
-            $escaped = str_replace(['\[', '\]'], ['[', ']'], $matches[1]);
+            $escaped = $this->escapeBracket($matches[1]);
             
             if (isset($this->_definitions[$matches[2]])) {
                 return "<img src=\"{$this->_definitions[$matches[2]]}\" alt=\"{$escaped}\" title=\"{$escaped}\">";
@@ -243,12 +235,12 @@ class Parser
 
         // link
         $text = preg_replace_callback("/\[((?:[^\]]|\\]|\\[)+?)\]\(([^\)]+)\)/", function ($matches) {
-            $escaped = str_replace(['\[', '\]'], ['[', ']'], $matches[1]);
+            $escaped = $this->escapeBracket($matches[1]);
             return "<a href=\"{$matches[2]}\">{$escaped}</a>";
         }, $text); 
 
         $text = preg_replace_callback("/\[((?:[^\]]|\\]|\\[)+?)\]\[((?:[^\]]|\\]|\\[)+)\]/", function ($matches) {
-            $escaped = str_replace(['\[', '\]'], ['[', ']'], $matches[1]);
+            $escaped = $this->escapeBracket($matches[1]);
             
             if (isset($this->_definitions[$matches[2]])) {
                 return "<a href=\"{$this->_definitions[$matches[2]]}\">{$escaped}</a>";
@@ -274,10 +266,9 @@ class Parser
      * 
      * @param string $text 
      * @param array $lines
-     * @param bool $parseDefinition
      * @return array
      */
-    private function parseBlock($text, &$lines, $parseDefinition = true)
+    private function parseBlock($text, &$lines)
     {
         $lines = explode("\n", $text);
         $this->_blocks = [];
@@ -295,7 +286,7 @@ class Parser
                 } else {
                     $this->startBlock('code', $key, $matches[2]);
                 }
-                
+
                 continue;
             } else if ($this->isBlock('code')) {
                 $this->setBlock($key);
@@ -327,7 +318,7 @@ class Parser
             switch (true) {
                 // list
                 case preg_match("/^(\s*)((?:[0-9a-z]\.?)|\-|\+|\*)\s+/", $line, $matches):
-                    $space = strlen($matches[1]) + strlen($matches[2]);
+                    $space = strlen($matches[1]);
 
                     // opened
                     if ($this->isBlock('list')) {
@@ -341,6 +332,13 @@ class Parser
                 case preg_match("/^\[\^((?:[^\]]|\\]|\\[)+?)\]:/", $line, $matches):
                     $space = strlen($matches[0]) - 1;
                     $this->startBlock('footnote', $key, [$space, $matches[1]]);
+                    break;
+
+                // definition
+                case preg_match("/^\s*\[((?:[^\]]|\\]|\\[)+?)\]:\s*(.+)$/", $line, $matches):
+                    $this->_definitions[$matches[1]] = $matches[2];
+                    $this->startBlock('definition', $key)
+                        ->endBlock();
                     break;
 
                 // pre
@@ -389,7 +387,7 @@ class Parser
                 default:
                     if ($this->isBlock('list')) {
                         preg_match("/^(\s*)/", $line, $matches);
-                        
+
                         if (strlen($matches[1]) >= $this->getBlock()[3]) {
                             $this->setBlock($key);
                         } else {
@@ -397,7 +395,7 @@ class Parser
                         }
                     } else if ($this->isBlock('footnote')) {
                         preg_match("/^(\s*)/", $line, $matches);
-                        
+
                         if (strlen($matches[1]) >= $this->getBlock()[3][0]) {
                             $this->setBlock($key);
                         } else {
@@ -416,33 +414,54 @@ class Parser
             }
         }
 
-        // check if last block is definition
-        $lastBlock = $this->getBlock();
-        if ($lastBlock[0] == 'normal' && $parseDefinition) {
-            $found = false;
-            $step = 0;
+        return $this->optimizeBlocks($this->_blocks, $lines);
+    }
 
-            for ($i = $lastBlock[2]; $i >= $lastBlock[1]; $i --) {
-                $line = $lines[$i];
-                $step ++;
+    /**
+     * @param array $blocks
+     * @param array $lines
+     * @return array
+     */
+    private function optimizeBlocks(array $blocks, array $lines)
+    {
+        $blocks = $this->call('beforeOptimizeBlocks', $blocks, $lines);
 
-                if (preg_match("/^\s*$/", $line)) {
-                    continue;
-                } else if (preg_match("/^\s*\[((?:[^\]]|\\]|\\[)+?)\]:\s*(.+)$/i", $line, $matches)) {
-                    $found = true;
-                    $this->_definitions[$matches[1]] = $matches[2];
-                } else {
-                    $step --;
-                    break;
+        foreach ($blocks as $key => &$block) {
+            $prevBlock = isset($blocks[$key - 1]) ? $blocks[$key - 1] : NULL;
+            $nextBlock = isset($blocks[$key + 1]) ? $blocks[$key + 1] : NULL;
+
+            list ($type, $from, $to) = $block;
+
+            if ('pre' == $type) {
+                $isEmpty = true;
+
+                for ($i = $from; $i <= $to; $i ++) {
+                    $line = $lines[$i];
+                    if (!preg_match("/^\s*$/", $line)) {
+                        $isEmpty = false;
+                        break;
+                    }
+                }
+
+                if ($isEmpty) {
+                    $block[0] = $type = 'normal';
                 }
             }
 
-            if ($found) {
-                $this->backBlock($step, 'define');
+            if ('normal' == $type) {
+                // one sigle empty line
+                if ($from == $to && preg_match("/^\s*$/", $lines[$from])
+                    && !empty($prevBlock) && !empty($nextBlock)) {
+                    if ($prevBlock[0] == 'list' && $nextBlock[0] == 'list') {
+                        // combine 3 blocks
+                        $blocks[$key - 1] = ['list', $prevBlock[1], $nextBlock[2], NULL];
+                        array_splice($blocks, $key, 2);
+                    }
+                }
             }
         }
 
-        return $this->_blocks;
+        return $this->call('afterOptimizeBlocks', $blocks, $lines);
     }
 
     /**
@@ -706,7 +725,7 @@ class Parser
      * 
      * @return string
      */
-    private function parseDefine()
+    private function parseDefinition()
     {
         return '';
     }
@@ -726,6 +745,15 @@ class Parser
         }
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * @param $str
+     * @return mixed
+     */
+    private function escapeBracket($str)
+    {
+        return str_replace(['[', ']'], ['[', ']'], $str);
     }
 
     /**
