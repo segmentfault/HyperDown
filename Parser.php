@@ -182,12 +182,12 @@ class Parser
         $text = $this->call('beforeParseInline', $text);
 
         // code
-        $text = preg_replace_callback("/(?:^|[^\\\])`(.+?)`/", function ($matches) use (&$id, &$codes, $uniqid) {
+        $text = preg_replace_callback("/(^|[^\\\])`(.+?)`/", function ($matches) use (&$id, &$codes, $uniqid) {
             $key = '|' . $uniqid . $id . '|';
-            $codes[$key] = '<code>' . htmlspecialchars($matches[1]) . '</code>';
+            $codes[$key] = '<code>' . htmlspecialchars($matches[2]) . '</code>';
             $id ++;
 
-            return $key;
+            return $matches[1] . $key;
         }, $text);
 
         // encode unsafe tags
