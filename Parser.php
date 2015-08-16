@@ -99,6 +99,7 @@ class Parser
      */
     public function makeHtml($text)
     {
+        $text = $this->initText($text);
         $html = $this->parse($text);
         return $this->makeFootnotes($html);
     }
@@ -110,6 +111,16 @@ class Parser
     public function hook($type, $callback)
     {
         $this->_hooks[$type][] = $callback;
+    }
+
+    /**
+     * @param $text
+     * @return mixed
+     */
+    private function initText($text)
+    {
+        $text = str_replace(["\t", "\r"], ['    ', ''], $text);
+        return $text;
     }
 
     /**
