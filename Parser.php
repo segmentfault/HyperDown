@@ -191,13 +191,20 @@ class Parser
         }, $text);
 
         // encode unsafe tags
-        $text = preg_replace_callback("/<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/i", function ($matches) use ($whiteList) {
+        $text = preg_replace_callback("/<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/i", function ($matches)
+            use (&$id, &$codes, $uniqid, $whiteList) {
             if (stripos($this->_commonWhiteList . '|' . $whiteList, $matches[2]) !== false) {
-                return $matches[0];
+                $key = '|' . $uniqid . $id . '|';
+                $codes[$key] = $matches[0];
+                $id ++;
+
+                return $key;
             } else {
                 return htmlspecialchars($matches[0]);
             }
         }, $text);
+
+        $text = str_replace(['<', '>'], ['&lt;', '&gt;'], $text);
 
         // footnote
         $text = preg_replace_callback("/\[\^((?:[^\]]|\\]|\\[)+?)\]/", function ($matches) {
