@@ -403,6 +403,8 @@ class Parser
 
                 // pre
                 case preg_match("/^ {4,}/", $line):
+                    $emptyCount = 0;
+
                     if ($this->isBlock('pre')) {
                         $this->setBlock($key);
                     } else if ($this->isBlock('normal')) {
@@ -518,6 +520,18 @@ class Parser
                     } else if ($this->isBlock('table')) {
                         if (false !== strpos($line, '|')) {
                             $this->setBlock($key);
+                        } else {
+                            $this->startBlock('normal', $key);
+                        }
+                    } else if ($this->isBlock('pre')) {
+                        if (preg_match("/^\s*$/", $line)) {
+                            if ($emptyCount > 0) {
+                                $this->startBlock('normal', $key);
+                            } else {
+                                $this->setBlock($key);
+                            }
+
+                            $emptyCount ++;
                         } else {
                             $this->startBlock('normal', $key);
                         }
