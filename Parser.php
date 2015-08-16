@@ -69,6 +69,29 @@ class Parser
     private $_hooks = [];
 
     /**
+     * @var array
+     */
+    private $_holders = [];
+
+    /**
+     * @var string
+     */
+    private $_uniqid = '';
+
+    /**
+     * @var int
+     */
+    private $_id = 0;
+
+    /**
+     * init uniqid
+     */
+    public function __construct()
+    {
+        $this->_uniqid = md5(uniqid());
+    }
+
+    /**
      * makeHtml  
      * 
      * @param mixed $text 
@@ -167,6 +190,31 @@ class Parser
     }
 
     /**
+     * @param $str
+     * @return string
+     */
+    private function makeHolder($str)
+    {
+        $key = '|' . $this->_uniqid . $this->_id . '|';
+        $this->_id ++;
+        $this->_holders[$key] = $str;
+
+        return $key;
+    }
+
+    /**
+     * @param $text
+     * @return string
+     */
+    private function releaseHolder($text)
+    {
+        $text = str_replace(array_keys($this->_holders), array_values($this->_holders), $text);
+        $this->_holders = [];
+
+        return $text;
+    }
+
+    /**
      * parseInline 
      * 
      * @param string $text 
@@ -175,30 +223,17 @@ class Parser
      */
     private function parseInline($text, $whiteList = '')
     {
-        $id = 0;
-        $uniqid = md5(uniqid());
-        $codes = [];
-
         $text = $this->call('beforeParseInline', $text);
 
         // code
-        $text = preg_replace_callback("/(^|[^\\\])`(.+?)`/", function ($matches) use (&$id, &$codes, $uniqid) {
-            $key = '|' . $uniqid . $id . '|';
-            $codes[$key] = '<code>' . htmlspecialchars($matches[2]) . '</code>';
-            $id ++;
-
-            return $matches[1] . $key;
+        $text = preg_replace_callback("/(^|[^\\\])`(.+?)`/", function ($matches) {
+            return $matches[1] . $this->makeHolder('<code>' . htmlspecialchars($matches[2]) . '</code>');
         }, $text);
 
         // encode unsafe tags
-        $text = preg_replace_callback("/<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/i", function ($matches)
-            use (&$id, &$codes, $uniqid, $whiteList) {
+        $text = preg_replace_callback("/<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/i", function ($matches) use ($whiteList) {
             if (stripos($this->_commonWhiteList . '|' . $whiteList, $matches[2]) !== false) {
-                $key = '|' . $uniqid . $id . '|';
-                $codes[$key] = $matches[0];
-                $id ++;
-
-                return $key;
+                return $this->makeHolder($matches[0]);
             } else {
                 return htmlspecialchars($matches[0]);
             }
@@ -215,48 +250,44 @@ class Parser
                 $this->_footnotes[$id] = $matches[1];
             }
 
-            return "<sup id=\"fnref-{$id}\"><a href=\"#fn-{$id}\" class=\"footnote-ref\">{$id}</a></sup>";
+            return $this->makeHolder("<sup id=\"fnref-{$id}\"><a href=\"#fn-{$id}\" class=\"footnote-ref\">{$id}</a></sup>");
         }, $text);
 
         // image
-        $text = preg_replace_callback("/!\[((?:[^\]]|\\]|\\[)+?)\]\(([^\)]+)\)/", function ($matches) {
+        $text = preg_replace_callback("/!\[((?:[^\]]|\\]|\\[)*?)\]\(([^\)]+)\)/", function ($matches) {
             $escaped = $this->escapeBracket($matches[1]);
-            return "<img src=\"{$matches[2]}\" alt=\"{$escaped}\" title=\"{$escaped}\">";
+            return $this->makeHolder("<img src=\"{$matches[2]}\" alt=\"{$escaped}\" title=\"{$escaped}\">");
         }, $text);
 
-        $text = preg_replace_callback("/!\[((?:[^\]]|\\]|\\[)+?)\]\[((?:[^\]]|\\]|\\[)+)\]/", function ($matches) {
+        $text = preg_replace_callback("/!\[((?:[^\]]|\\]|\\[)*?)\]\[((?:[^\]]|\\]|\\[)+)\]/", function ($matches) {
             $escaped = $this->escapeBracket($matches[1]);
-            
-            if (isset($this->_definitions[$matches[2]])) {
-                return "<img src=\"{$this->_definitions[$matches[2]]}\" alt=\"{$escaped}\" title=\"{$escaped}\">";
-            } else {
-                return $escaped;
-            }
+
+            $result = isset($this->_definitions[$matches[2]]) ?
+                "<img src=\"{$this->_definitions[$matches[2]]}\" alt=\"{$escaped}\" title=\"{$escaped}\">"
+                : $escaped;
+
+            return $this->makeHolder($result);
         }, $text);
 
         // link
         $text = preg_replace_callback("/\[((?:[^\]]|\\]|\\[)+?)\]\(([^\)]+)\)/", function ($matches) {
             $escaped = $this->escapeBracket($matches[1]);
-            return "<a href=\"{$matches[2]}\">{$escaped}</a>";
+            return $this->makeHolder("<a href=\"{$matches[2]}\">{$escaped}</a>");
         }, $text); 
 
         $text = preg_replace_callback("/\[((?:[^\]]|\\]|\\[)+?)\]\[((?:[^\]]|\\]|\\[)+)\]/", function ($matches) {
             $escaped = $this->escapeBracket($matches[1]);
             
-            if (isset($this->_definitions[$matches[2]])) {
-                return "<a href=\"{$this->_definitions[$matches[2]]}\">{$escaped}</a>";
-            } else {
-                return $escaped;
-            }
+            $result = isset($this->_definitions[$matches[2]]) ?
+                "<a href=\"{$this->_definitions[$matches[2]]}\">{$escaped}</a>"
+                : $escaped;
+
+            return $this->makeHolder($result);
         }, $text);
 
         // escape
-        $text = preg_replace_callback("/\\\(`|\*|_)/", function ($matches) use (&$id, &$codes, $uniqid) {
-            $key = '|' . $uniqid . $id . '|';
-            $codes[$key] = htmlspecialchars($matches[1]);
-            $id ++;
-
-            return $key;
+        $text = preg_replace_callback("/\\\(`|\*|_)/", function ($matches) {
+            return $this->makeHolder(htmlspecialchars($matches[1]));
         }, $text);
 
         // strong and em and some fuck
@@ -270,7 +301,7 @@ class Parser
             "\\1<a href=\"\\2\">\\2</a>\\4", $text);
 
         // release
-        $text = str_replace(array_keys($codes), array_values($codes), $text);
+        $text = $this->releaseHolder($text);
 
         $text = $this->call('afterParseInline', $text);
 
