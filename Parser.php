@@ -142,7 +142,6 @@ class Parser
                 }
 
                 $html .= "<li id=\"fn-{$index}\">{$val}</li>";
-
                 $index ++;
             }
 
@@ -313,7 +312,6 @@ class Parser
 
         // release
         $text = $this->releaseHolder($text);
-
         $text = $this->call('afterParseInline', $text);
 
         return $text;
@@ -330,7 +328,7 @@ class Parser
     {
         $lines = explode("\n", $text);
         $this->_blocks = [];
-        $this->_current = '';
+        $this->_current = 'normal';
         $this->_pos = -1;
         $special = implode("|", array_keys($this->_specialWhiteList));
         $emptyCount = 0;
@@ -410,6 +408,7 @@ class Parser
                     } else if ($this->isBlock('normal')) {
                         $this->startBlock('pre', $key);
                     }
+
                     break;
 
                 // table
