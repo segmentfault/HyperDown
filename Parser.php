@@ -264,12 +264,13 @@ class Parser
         }, $text);
 
         // image
-        $text = preg_replace_callback("/!\[((?:[^\]]|\\]|\\[)*?)\]\(([^\)]+)\)/", function ($matches) {
+        $text = preg_replace_callback("/!\[((?:[^\]]|\\]|\\[)*?)\]\(((?:[^\)]|\\)|\\()+?)\)/", function ($matches) {
             $escaped = $this->escapeBracket($matches[1]);
-            return $this->makeHolder("<img src=\"{$matches[2]}\" alt=\"{$escaped}\" title=\"{$escaped}\">");
+            $url = $this->escapeBracket($matches[2]);
+            return $this->makeHolder("<img src=\"{$url}\" alt=\"{$escaped}\" title=\"{$escaped}\">");
         }, $text);
 
-        $text = preg_replace_callback("/!\[((?:[^\]]|\\]|\\[)*?)\]\[((?:[^\]]|\\]|\\[)+)\]/", function ($matches) {
+        $text = preg_replace_callback("/!\[((?:[^\]]|\\]|\\[)*?)\]\[((?:[^\]]|\\]|\\[)+?)\]/", function ($matches) {
             $escaped = $this->escapeBracket($matches[1]);
 
             $result = isset($this->_definitions[$matches[2]]) ?
@@ -280,12 +281,13 @@ class Parser
         }, $text);
 
         // link
-        $text = preg_replace_callback("/\[((?:[^\]]|\\]|\\[)+?)\]\(([^\)]+)\)/", function ($matches) {
+        $text = preg_replace_callback("/\[((?:[^\]]|\\]|\\[)+?)\]\(((?:[^\)]|\\)|\\()+?)\)/", function ($matches) {
             $escaped = $this->escapeBracket($matches[1]);
-            return $this->makeHolder("<a href=\"{$matches[2]}\">{$escaped}</a>");
+            $url = $this->escapeBracket($matches[2]);
+            return $this->makeHolder("<a href=\"{$url}\">{$escaped}</a>");
         }, $text); 
 
-        $text = preg_replace_callback("/\[((?:[^\]]|\\]|\\[)+?)\]\[((?:[^\]]|\\]|\\[)+)\]/", function ($matches) {
+        $text = preg_replace_callback("/\[((?:[^\]]|\\]|\\[)+?)\]\[((?:[^\]]|\\]|\\[)+?)\]/", function ($matches) {
             $escaped = $this->escapeBracket($matches[1]);
             
             $result = isset($this->_definitions[$matches[2]]) ?
@@ -503,7 +505,7 @@ class Parser
                             }
 
                             $emptyCount ++;
-                        } else if (strlen($matches[1]) >= $this->getBlock()[3] && $emptyCount == 0) {
+                        } else if ($emptyCount == 0) {
                             $this->setBlock($key);
                         } else {
                             $this->startBlock('normal', $key);
@@ -905,7 +907,7 @@ class Parser
      */
     private function escapeBracket($str)
     {
-        return str_replace(['[', ']'], ['[', ']'], $str);
+        return str_replace(['\[', '\]', '\(', '\)'], ['[', ']', '(', ')'], $str);
     }
 
     /**
