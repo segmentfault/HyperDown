@@ -236,8 +236,8 @@ class Parser
         $text = $this->call('beforeParseInline', $text);
 
         // code
-        $text = preg_replace_callback("/(^|[^\\\])`(.+?)`/", function ($matches) {
-            return $matches[1] . $this->makeHolder('<code>' . htmlspecialchars($matches[2]) . '</code>');
+        $text = preg_replace_callback("/(^|[^\\\])(`+)(.+?)\\2/", function ($matches) {
+            return $matches[1] . $this->makeHolder('<code>' . htmlspecialchars($matches[3]) . '</code>');
         }, $text);
 
         // encode unsafe tags
