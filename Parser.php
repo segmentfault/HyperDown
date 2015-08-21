@@ -568,15 +568,9 @@ class Parser
             list ($type, $from, $to) = $block;
 
             if ('pre' == $type) {
-                $isEmpty = true;
-
-                for ($i = $from; $i <= $to; $i ++) {
-                    $line = $lines[$i];
-                    if (!preg_match("/^\s*$/", $line)) {
-                        $isEmpty = false;
-                        break;
-                    }
-                }
+                $isEmpty = array_reduce($lines, function ($result, $line) {
+                    return preg_match("/^\s*$/", $line) && $result;
+                }, true);
 
                 if ($isEmpty) {
                     $block[0] = $type = 'normal';
@@ -584,7 +578,7 @@ class Parser
             }
 
             if ('normal' == $type) {
-                // one sigle empty line
+                // combine two splitted list
                 if ($from == $to && preg_match("/^\s*$/", $lines[$from])
                     && !empty($prevBlock) && !empty($nextBlock)) {
                     if ($prevBlock[0] == 'list' && $nextBlock[0] == 'list') {
@@ -610,8 +604,10 @@ class Parser
     {
         $lang = trim($lang);
         $lines = array_slice($lines, 1, -1);
+        $str = implode("\n", $lines);
 
-        return '<pre><code' . (!empty($lang) ? " class=\"{$lang}\"" : '') . '>'
+        return preg_match("/^\s*$/", $str) ? '' :
+            '<pre><code' . (!empty($lang) ? " class=\"{$lang}\"" : '') . '>'
             . htmlspecialchars(implode("\n", $lines)) . '</code></pre>';
     }
 
@@ -626,8 +622,9 @@ class Parser
         foreach ($lines as &$line) {
             $line = htmlspecialchars(substr($line, 4));
         }
+        $str = implode("\n", $lines);
 
-        return '<pre><code>' . implode("\n", $lines) . '</code></pre>';
+        return preg_match("/^\s*$/", $str) ? '' : '<pre><code>' . $str . '</code></pre>';
     }
 
     /**
@@ -640,7 +637,7 @@ class Parser
     private function parseSh(array $lines, $num)
     {
         $line = $this->parseInline(trim($lines[0], '# '));
-        return "<h{$num}>{$line}</h{$num}>";
+        return preg_match("/^\s*$/", $line) ? '' : "<h{$num}>{$line}</h{$num}>";
     }
 
     /**
@@ -653,7 +650,7 @@ class Parser
     private function parseMh(array $lines, $num)
     {
         $line = $this->parseInline(trim($lines[0], '# '));
-        return "<h{$num}>{$line}</h{$num}>";
+        return preg_match("/^\s*$/", $line) ? '' : "<h{$num}>{$line}</h{$num}>";
     }
 
     /**
@@ -667,8 +664,9 @@ class Parser
         foreach ($lines as &$line) {
             $line = preg_replace("/^> ?/", '', $line);
         }
+        $str = implode("\n", $lines);
 
-        return '<blockquote>' . $this->parse(implode("\n", $lines)) . '</blockquote>';
+        return preg_match("/^\s*$/", $str) ? '' : '<blockquote>' . $this->parse($str) . '</blockquote>';
     }
 
     /**
@@ -851,7 +849,7 @@ class Parser
         $str = preg_replace("/(\n\s*){2,}/", "</p><p>", $str);
         $str = preg_replace("/\n/", "<br>", $str);
 
-        return empty($str) ? '' : "<p>{$str}</p>";
+        return preg_match("/^\s*$/", $str) ? '' : "<p>{$str}</p>";
     }
 
     /**
