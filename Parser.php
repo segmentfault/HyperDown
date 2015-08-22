@@ -303,9 +303,9 @@ class Parser
         }, $text);
 
         // strong and em and some fuck
-        $text = preg_replace("/(_|\*){3}(.+?)\\2{3}/", "<strong><em>\\2</em></strong>", $text);
-        $text = preg_replace("/(_|\*){2}(.+?)\\2{2}/", "<strong>\\2</strong>", $text);
-        $text = preg_replace("/(_|\*)(.+?)\\2/", "<em>\\2</em>", $text);
+        $text = preg_replace("/(_|\*){3}(.+?)\\1{3}/", "<strong><em>\\2</em></strong>", $text);
+        $text = preg_replace("/(_|\*){2}(.+?)\\1{2}/", "<strong>\\2</strong>", $text);
+        $text = preg_replace("/(_|\*)(.+?)\\1/", "<em>\\2</em>", $text);
         $text = preg_replace("/<(https?:\/\/.+)>/i", "<a href=\"\\1\">\\1</a>", $text);
 
         // autolink
