@@ -312,6 +312,8 @@ class Parser
         $text = preg_replace("/(^|[^\"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",
             "\\1<a href=\"\\2\">\\2</a>\\4", $text);
 
+        $text = $this->call('afterParseInlineBeforeRelease', $text);
+
         // release
         $text = $this->releaseHolder($text);
         $text = $this->call('afterParseInline', $text);
