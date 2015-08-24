@@ -114,6 +114,19 @@ class Parser
     }
 
     /**
+     * @param $str
+     * @return string
+     */
+    public function makeHolder($str)
+    {
+        $key = '|' . $this->_uniqid . $this->_id . '|';
+        $this->_id ++;
+        $this->_holders[$key] = $str;
+
+        return $key;
+    }
+
+    /**
      * @param $text
      * @return mixed
      */
@@ -197,19 +210,6 @@ class Parser
         }
 
         return $value;
-    }
-
-    /**
-     * @param $str
-     * @return string
-     */
-    private function makeHolder($str)
-    {
-        $key = '|' . $this->_uniqid . $this->_id . '|';
-        $this->_id ++;
-        $this->_holders[$key] = $str;
-
-        return $key;
     }
 
     /**
