@@ -307,8 +307,9 @@ class Parser
         $text = preg_replace("/(_|\*){2}(.+?)\\1{2}/", "<strong>\\2</strong>", $text);
         $text = preg_replace("/(_|\*)(.+?)\\1/", "<em>\\2</em>", $text);
         $text = preg_replace("/<(https?:\/\/.+)>/i", "<a href=\"\\1\">\\1</a>", $text);
+        $text = preg_replace("/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/i", "<a href=\"mailto:\\1\">\\1</a>", $text);
 
-        // autolink
+        // autolink url
         $text = preg_replace("/(^|[^\"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",
             "\\1<a href=\"\\2\">\\2</a>\\4", $text);
 
