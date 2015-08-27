@@ -340,12 +340,12 @@ class Parser
         // analyze by line
         foreach ($lines as $key => $line) {
             // code block is special
-            if (preg_match("/^(~|`){3,}([^`~]*)$/i", $line, $matches)) {
+            if (preg_match("/^(\s*)(~|`){3,}([^`~]*)$/i", $line, $matches)) {
                 if ($this->isBlock('code')) {
                     $this->setBlock($key)
                         ->endBlock();
                 } else {
-                    $this->startBlock('code', $key, $matches[2]);
+                    $this->startBlock('code', $key, [$matches[1], $matches[3]]);
                 }
 
                 continue;
@@ -599,13 +599,22 @@ class Parser
      * parseCode 
      * 
      * @param array $lines 
-     * @param string $lang 
+     * @param array $parts
      * @return string
      */
-    private function parseCode(array $lines, $lang)
+    private function parseCode(array $lines, array $parts)
     {
+        list ($blank, $lang) = $parts;
         $lang = trim($lang);
-        $lines = array_slice($lines, 1, -1);
+        $count = strlen($blank);
+
+        if (!preg_match("/^[_a-z0-9-\+\#]+$/i", $lang)) {
+            $lang = NULL;
+        }
+
+        $lines = array_map(function ($line) use ($count) {
+            return preg_replace("/^[ ]{{$count}}/", '', $line);
+        }, array_slice($lines, 1, -1));
         $str = implode("\n", $lines);
 
         return preg_match("/^\s*$/", $str) ? '' :
