@@ -343,10 +343,28 @@ class Parser
             // code block is special
             if (preg_match("/^(\s*)(~|`){3,}([^`~]*)$/i", $line, $matches)) {
                 if ($this->isBlock('code')) {
-                    $this->setBlock($key)
-                        ->endBlock();
+                    $block = $this->getBlock();
+                    $isAfterList = $block[3][2];
+
+                    if ($isAfterList) {
+                        $this->combineBlock()
+                            ->setBlock($key);
+                    } else {
+                        $this->setBlock($key)
+                            ->endBlock();
+                    }
                 } else {
-                    $this->startBlock('code', $key, [$matches[1], $matches[3]]);
+                    $isAfterList = false;
+
+                    if ($this->isBlock('list')) {
+                        $block = $this->getBlock();
+                        $space = $block[3];
+
+                        $isAfterList = ($space > 0 && strlen($matches[1]) >= $space)
+                            || strlen($matches[1]) > $space;
+                    }
+
+                    $this->startBlock('code', $key, [$matches[1], $matches[3], $isAfterList]);
                 }
 
                 continue;
@@ -1015,6 +1033,27 @@ class Parser
 
         $this->_current = $type;
         $this->_blocks[$this->_pos] = [$type, $last - $step + 1, $last, $value];
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    private function combineBlock()
+    {
+        if ($this->_pos < 1) {
+            return $this;
+        }
+
+        $prev = $this->_blocks[$this->_pos - 1];
+        $current = $this->_blocks[$this->_pos];
+
+        $prev[2] = $current[2];
+        $this->_blocks[$this->_pos - 1] = $prev;
+        $this->_current = $prev[0];
+        unset($this->_blocks[$this->_pos]);
+        $this->_pos --;
 
         return $this;
     }
