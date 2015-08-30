@@ -119,7 +119,7 @@ class Parser
      */
     public function makeHolder($str)
     {
-        $key = '|' . $this->_uniqid . $this->_id . '|';
+        $key = "|\r" . $this->_uniqid . $this->_id . "\r|";
         $this->_id ++;
         $this->_holders[$key] = $str;
 
@@ -218,7 +218,12 @@ class Parser
      */
     private function releaseHolder($text)
     {
-        $text = str_replace(array_keys($this->_holders), array_values($this->_holders), $text);
+        $deep = 0;
+        while (strpos($text, "|\r") !== false && $deep < 10) {
+            $text = str_replace(array_keys($this->_holders), array_values($this->_holders), $text);
+            $deep ++;
+        }
+
         $this->_holders = [];
 
         return $text;
@@ -298,13 +303,14 @@ class Parser
         }, $text);
 
         // escape
-        $text = preg_replace_callback("/\\\(`|\*|_)/", function ($matches) {
+        $text = preg_replace_callback("/\\\(`|\*|_|~)/", function ($matches) {
             return $this->makeHolder(htmlspecialchars($matches[1]));
         }, $text);
 
         // strong and em and some fuck
-        $text = preg_replace("/(_|\*){3}(.+?)\\1{3}/", "<strong><em>\\2</em></strong>", $text);
-        $text = preg_replace("/(_|\*){2}(.+?)\\1{2}/", "<strong>\\2</strong>", $text);
+        $text = preg_replace("/((?:_|\*){3})(.+?)\\1/", "<strong><em>\\2</em></strong>", $text);
+        $text = preg_replace("/((?:_|\*){2})(.+?)\\1/", "<strong>\\2</strong>", $text);
+        $text = preg_replace("/([~]{2})(.+?)\\1/", "<del>\\2</del>", $text);
         $text = preg_replace("/(_|\*)(.+?)\\1/", "<em>\\2</em>", $text);
         $text = preg_replace("/<(https?:\/\/.+)>/i", "<a href=\"\\1\">\\1</a>", $text);
         $text = preg_replace("/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/i", "<a href=\"mailto:\\1\">\\1</a>", $text);
@@ -314,9 +320,8 @@ class Parser
             "\\1<a href=\"\\2\">\\2</a>\\4", $text);
 
         $text = $this->call('afterParseInlineBeforeRelease', $text);
-
-        // release
         $text = $this->releaseHolder($text);
+
         $text = $this->call('afterParseInline', $text);
 
         return $text;
