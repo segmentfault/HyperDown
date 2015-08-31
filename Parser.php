@@ -796,24 +796,36 @@ class Parser
                 continue;
             }
 
+
+            $line = trim($line);
+
             if ($line[0] == '|') {
                 $line = substr($line, 1);
+
                 if ($line[strlen($line) - 1] == '|') {
                     $line = substr($line, 0, -1);
                 }
             }
 
-            $line = preg_replace("/^(\|?)(.*?)\\1$/", "\\2", $line);
-            $rows = array_map('trim', explode('|', $line));
+
+            $rows = array_map(function ($row) {
+                if (preg_match("/^\s+$/", $row)) {
+                    return ' ';
+                } else {
+                    return trim($row);
+                }
+            }, explode('|', $line));
             $columns = [];
             $last = -1;
 
             foreach ($rows as $row) {
                 if (strlen($row) > 0) {
                     $last ++;
-                    $columns[$last] = [1, $row];
+                    $columns[$last] = [isset($columns[$last]) ? $columns[$last][0] + 1 : 1, $row];
                 } else if (isset($columns[$last])) {
                     $columns[$last][0] ++;
+                } else {
+                    $columns[0] = [1, $row];
                 }
             }
 
