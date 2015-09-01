@@ -427,8 +427,17 @@ class Parser
                         ->endBlock();
                     break;
 
+                // block quote
+                case preg_match("/^\s*>/", $line):
+                    if ($this->isBlock('quote')) {
+                        $this->setBlock($key);
+                    } else {
+                        $this->startBlock('quote', $key);
+                    }
+                    break;
+
                 // pre
-                case preg_match("/^ {4,}/", $line):
+                case preg_match("/^ {4}/", $line):
                     $emptyCount = 0;
 
                     if ($this->isBlock('pre')) {
@@ -500,15 +509,6 @@ class Parser
                             ->endBlock();
                     } else {
                         $this->startBlock('normal', $key);
-                    }
-                    break;
-
-                // block quote
-                case preg_match("/^>/", $line):
-                    if ($this->isBlock('quote')) {
-                        $this->setBlock($key);
-                    } else {
-                        $this->startBlock('quote', $key);
                     }
                     break;
 
@@ -697,7 +697,7 @@ class Parser
     private function parseQuote(array $lines)
     {
         foreach ($lines as &$line) {
-            $line = preg_replace("/^> ?/", '', $line);
+            $line = preg_replace("/^\s*> ?/", '', $line);
         }
         $str = implode("\n", $lines);
 
