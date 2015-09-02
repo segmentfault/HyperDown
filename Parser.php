@@ -245,6 +245,11 @@ class Parser
             return $matches[1] . $this->makeHolder('<code>' . htmlspecialchars($matches[3]) . '</code>');
         }, $text);
 
+        // link
+        $text = preg_replace_callback("/<(https?:\/\/.+)>/i", function ($matches) {
+            return "<a href=\"{$matches[1]}\">{$matches[1]}</a>";
+        }, $text);
+
         // encode unsafe tags
         $text = preg_replace_callback("/<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/i", function ($matches) use ($whiteList) {
             if (stripos($this->_commonWhiteList . '|' . $whiteList, $matches[2]) !== false) {
@@ -315,7 +320,6 @@ class Parser
         $text = preg_replace("/(\s+)(_{2})(.+?)\\2(\s+)/", "\\1<strong>\\3</strong>\\4", $text);
         $text = preg_replace("/(\s+)(_)(.+?)\\2(\s+)/", "\\1<em>\\3</em>\\4", $text);
         $text = preg_replace("/(~{2})(.+?)\\1/", "<del>\\2</del>", $text);
-        $text = preg_replace("/<(https?:\/\/.+)>/i", "<a href=\"\\1\">\\1</a>", $text);
         $text = preg_replace("/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/i", "<a href=\"mailto:\\1\">\\1</a>", $text);
 
         // autolink url
