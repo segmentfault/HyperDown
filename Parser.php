@@ -267,7 +267,7 @@ class Parser
 
             if (false === $id) {
                 $id = count($this->_footnotes) + 1;
-                $this->_footnotes[$id] = $matches[1];
+                $this->_footnotes[$id] = $this->parseInline($matches[1]);
             }
 
             return $this->makeHolder("<sup id=\"fnref-{$id}\"><a href=\"#fn-{$id}\" class=\"footnote-ref\">{$id}</a></sup>");
@@ -292,13 +292,13 @@ class Parser
 
         // link
         $text = preg_replace_callback("/\[((?:[^\]]|\\]|\\[)+?)\]\(((?:[^\)]|\\)|\\()+?)\)/", function ($matches) {
-            $escaped = $this->escapeBracket($matches[1]);
+            $escaped = $this->parseInline($this->escapeBracket($matches[1]));
             $url = $this->escapeBracket($matches[2]);
             return $this->makeHolder("<a href=\"{$url}\">{$escaped}</a>");
         }, $text); 
 
         $text = preg_replace_callback("/\[((?:[^\]]|\\]|\\[)+?)\]\[((?:[^\]]|\\]|\\[)+?)\]/", function ($matches) {
-            $escaped = $this->escapeBracket($matches[1]);
+            $escaped = $this->parseInline($this->escapeBracket($matches[1]));
             
             $result = isset($this->_definitions[$matches[2]]) ?
                 "<a href=\"{$this->_definitions[$matches[2]]}\">{$escaped}</a>"
