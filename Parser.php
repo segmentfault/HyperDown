@@ -214,9 +214,10 @@ class Parser
 
     /**
      * @param $text
+     * @param $clearHolders
      * @return string
      */
-    private function releaseHolder($text)
+    private function releaseHolder($text, $clearHolders = true)
     {
         $deep = 0;
         while (strpos($text, "|\r") !== false && $deep < 10) {
@@ -224,7 +225,9 @@ class Parser
             $deep ++;
         }
 
-        $this->_holders = [];
+        if ($clearHolders) {
+            $this->_holders = [];
+        }
 
         return $text;
     }
@@ -234,9 +237,10 @@ class Parser
      * 
      * @param string $text 
      * @param string $whiteList
+     * @param bool $clearHolders
      * @return string
      */
-    private function parseInline($text, $whiteList = '')
+    private function parseInline($text, $whiteList = '', $clearHolders = true)
     {
         $text = $this->call('beforeParseInline', $text);
 
@@ -267,7 +271,7 @@ class Parser
 
             if (false === $id) {
                 $id = count($this->_footnotes) + 1;
-                $this->_footnotes[$id] = $this->parseInline($matches[1]);
+                $this->_footnotes[$id] = $this->parseInline($matches[1], '', false);
             }
 
             return $this->makeHolder("<sup id=\"fnref-{$id}\"><a href=\"#fn-{$id}\" class=\"footnote-ref\">{$id}</a></sup>");
@@ -292,13 +296,13 @@ class Parser
 
         // link
         $text = preg_replace_callback("/\[((?:[^\]]|\\]|\\[)+?)\]\(((?:[^\)]|\\)|\\()+?)\)/", function ($matches) {
-            $escaped = $this->parseInline($this->escapeBracket($matches[1]));
+            $escaped = $this->parseInline($this->escapeBracket($matches[1]), '', false);
             $url = $this->escapeBracket($matches[2]);
             return $this->makeHolder("<a href=\"{$url}\">{$escaped}</a>");
         }, $text); 
 
         $text = preg_replace_callback("/\[((?:[^\]]|\\]|\\[)+?)\]\[((?:[^\]]|\\]|\\[)+?)\]/", function ($matches) {
-            $escaped = $this->parseInline($this->escapeBracket($matches[1]));
+            $escaped = $this->parseInline($this->escapeBracket($matches[1]), '', false);
             
             $result = isset($this->_definitions[$matches[2]]) ?
                 "<a href=\"{$this->_definitions[$matches[2]]}\">{$escaped}</a>"
@@ -327,7 +331,7 @@ class Parser
             "\\1<a href=\"\\2\">\\2</a>\\4", $text);
 
         $text = $this->call('afterParseInlineBeforeRelease', $text);
-        $text = $this->releaseHolder($text);
+        $text = $this->releaseHolder($text, $clearHolders);
 
         $text = $this->call('afterParseInline', $text);
 
