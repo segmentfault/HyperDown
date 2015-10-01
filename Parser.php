@@ -513,7 +513,7 @@ class Parser
 
                 // multi heading
                 case preg_match("/^\s*((=|-){2,})\s*$/", $line, $matches)
-                    && ($this->getBlock() && !preg_match("/^\s*$/", $lines[$this->getBlock()[2]])):    // check if last line isn't empty
+                    && ($this->getBlock() && $this->getBlock()[0] == "normal" && !preg_match("/^\s*$/", $lines[$this->getBlock()[2]])):    // check if last line isn't empty
                     if ($this->isBlock('normal')) {
                         $this->backBlock(1, 'mh', $matches[1][0] == '=' ? 1 : 2)
                             ->setBlock($key)
