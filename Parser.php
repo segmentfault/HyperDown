@@ -729,7 +729,7 @@ class Parser
 
         // count levels
         foreach ($lines as $key => $line) {
-            if (preg_match("/^(\s*)((?:[0-9a-z]\.?)|\-|\+|\*)(\s+)(.*)$/", $line, $matches)) {
+            if (preg_match("/^(\s*)((?:[0-9a-z]+\.?)|\-|\+|\*)(\s+)(.*)$/", $line, $matches)) {
                 $space = strlen($matches[1]);
                 $type = false !== strpos('+-*', $matches[2]) ? 'ul' : 'ol';
                 $minSpace = min($space, $minSpace);
@@ -760,16 +760,16 @@ class Parser
                 if ($space != $minSpace) {
                     $leftLines[] = preg_replace("/^\s{" . $secondMinSpace . "}/", '', $line);
                 } else {
+                    if (!empty($leftLines)) {
+                        $html .= "<li>" . $this->parse(implode("\n", $leftLines)) . "</li>";
+                    }
+
                     if ($lastType != $type) {
                         if (!empty($lastType)) {
                             $html .= "</{$lastType}>";
                         }
 
                         $html .= "<{$type}>";
-                    }
-
-                    if (!empty($leftLines)) {
-                        $html .= "<li>" . $this->parse(implode("\n", $leftLines)) . "</li>";
                     }
 
                     $leftLines = [$text];
