@@ -451,7 +451,7 @@ class Parser
                 case preg_match("/^ {4}/", $line):
                     $emptyCount = 0;
 
-                    if ($this->isBlock('pre')) {
+                    if ($this->isBlock('pre') || $this->isBlock('list')) {
                         $this->setBlock($key);
                     } else if ($this->isBlock('normal')) {
                         $this->startBlock('pre', $key);
