@@ -251,7 +251,7 @@ class Parser
 
         // link
         $text = preg_replace_callback("/<(https?:\/\/.+)>/i", function ($matches) {
-            return "<a href=\"{$matches[1]}\">{$matches[1]}</a>";
+            return $this->makeHolder("<a href=\"{$matches[1]}\">{$matches[1]}</a>");
         }, $text);
 
         // encode unsafe tags
