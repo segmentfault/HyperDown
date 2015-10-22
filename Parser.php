@@ -317,13 +317,7 @@ class Parser
         }, $text);
 
         // strong and em and some fuck
-        $text = preg_replace("/(\*{3})(.+?)\\1/", "<strong><em>\\2</em></strong>", $text);
-        $text = preg_replace("/(\*{2})(.+?)\\1/", "<strong>\\2</strong>", $text);
-        $text = preg_replace("/(\*)(.+?)\\1/", "<em>\\2</em>", $text);
-        $text = preg_replace("/(\s+)(_{3})(.+?)\\2(\s+)/", "\\1<strong><em>\\3</em></strong>\\4", $text);
-        $text = preg_replace("/(\s+)(_{2})(.+?)\\2(\s+)/", "\\1<strong>\\3</strong>\\4", $text);
-        $text = preg_replace("/(\s+)(_)(.+?)\\2(\s+)/", "\\1<em>\\3</em>\\4", $text);
-        $text = preg_replace("/(~{2})(.+?)\\1/", "<del>\\2</del>", $text);
+        $text = $this->parseInlineCallback($text);
         $text = preg_replace("/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/i", "<a href=\"mailto:\\1\">\\1</a>", $text);
 
         // autolink url
@@ -334,6 +328,43 @@ class Parser
         $text = $this->releaseHolder($text, $clearHolders);
 
         $text = $this->call('afterParseInline', $text);
+
+        return $text;
+    }
+
+    /**
+     * @param $text
+     * @return mixed
+     */
+    private function parseInlineCallback($text)
+    {
+        $text = preg_replace_callback("/(\*{3})(.+?)\\1/", function ($matches) {
+            return '<strong><em>' . $this->parseInlineCallback($matches[2]) . '</em></strong>';
+        }, $text);
+
+        $text = preg_replace_callback("/(\*{2})(.+?)\\1/", function ($matches) {
+            return '<strong>' . $this->parseInlineCallback($matches[2]) . '</strong>';
+        }, $text);
+
+        $text = preg_replace_callback("/(\*)(.+?)\\1/", function ($matches) {
+            return '<em>' . $this->parseInlineCallback($matches[2]) . '</em>';
+        }, $text);
+
+        $text = preg_replace_callback("/(\s+|^)(_{3})(.+?)\\2(\s+|$)/", function ($matches) {
+            return $matches[1] . '<strong><em>' . $this->parseInlineCallback($matches[3]) . '</em></strong>' . $matches[4];
+        }, $text);
+
+        $text = preg_replace_callback("/(\s+|^)(_{2})(.+?)\\2(\s+|$)/", function ($matches) {
+            return $matches[1] . '<strong>' . $this->parseInlineCallback($matches[3]) . '</strong>' . $matches[4];
+        }, $text);
+
+        $text = preg_replace_callback("/(\s+|^)(_)(.+?)\\2(\s+|$)/", function ($matches) {
+            return $matches[1] . '<em>' . $this->parseInlineCallback($matches[3]) . '</em>' . $matches[4];
+        }, $text);
+
+        $text = preg_replace_callback("/(~{2})(.+?)\\1/", function ($matches) {
+            return '<del>' . $this->parseInlineCallback($matches[2]) . '</del>';
+        }, $text);
 
         return $text;
     }
