@@ -563,9 +563,7 @@ class Parser
                 // normal
                 default:
                     if ($this->isBlock('list')) {
-                        preg_match("/^(\s*)/", $line, $matches);
-
-                        if (strlen($line) == strlen($matches[1])) { // empty line
+                        if (preg_match("/^(\s*)/", $line)) { // empty line
                             if ($emptyCount > 0) {
                                 $this->startBlock('normal', $key);
                             } else {
@@ -605,10 +603,18 @@ class Parser
                             $this->startBlock('normal', $key);
                         }
                     } else if ($this->isBlock('quote')) {
-                        if (preg_match("/^\s*$/", $line)) {
-                            $this->startBlock('normal', $key);
-                        } else {
+                        if (preg_match("/^(\s*)/", $line)) { // empty line
+                            if ($emptyCount > 0) {
+                                $this->startBlock('normal', $key);
+                            } else {
+                                $this->setBlock($key);
+                            }
+
+                            $emptyCount ++;
+                        } else if ($emptyCount == 0) {
                             $this->setBlock($key);
+                        } else {
+                            $this->startBlock('normal', $key);
                         }
                     } else {
                         $block = $this->getBlock();
@@ -652,12 +658,14 @@ class Parser
             }
 
             if ('normal' == $type) {
-                // combine two splitted list
+                // combine two blocks
+                $types = ['list', 'quote'];
+
                 if ($from == $to && preg_match("/^\s*$/", $lines[$from])
                     && !empty($prevBlock) && !empty($nextBlock)) {
-                    if ($prevBlock[0] == 'list' && $nextBlock[0] == 'list') {
+                    if ($prevBlock[0] == $nextBlock[0] && in_array($prevBlock[0], $types)) {
                         // combine 3 blocks
-                        $blocks[$key - 1] = ['list', $prevBlock[1], $nextBlock[2], NULL];
+                        $blocks[$key - 1] = [$prevBlock[0], $prevBlock[1], $nextBlock[2], NULL];
                         array_splice($blocks, $key, 2);
                     }
                 }
