@@ -3,8 +3,8 @@
 namespace HyperDown;
 
 /**
- * Parser 
- * 
+ * Parser
+ *
  * @copyright Copyright (c) 2012 SegmentFault Team. (http://segmentfault.com)
  * @author Joyqi <joyqi@segmentfault.com>
  * @license BSD License
@@ -12,15 +12,15 @@ namespace HyperDown;
 class Parser
 {
     /**
-     * _whiteList 
-     * 
+     * _whiteList
+     *
      * @var string
      */
     private $_commonWhiteList = 'kbd|b|i|strong|em|sup|sub|br|code|del|a|hr|small';
 
     /**
-     * _specialWhiteList 
-     * 
+     * _specialWhiteList
+     *
      * @var mixed
      * @access private
      */
@@ -30,35 +30,35 @@ class Parser
 
     /**
      * _footnotes
-     * 
+     *
      * @var array
      */
     private $_footnotes = [];
 
     /**
      * _blocks
-     * 
+     *
      * @var array
      */
     private $_blocks = [];
 
     /**
-     * _current  
-     * 
+     * _current
+     *
      * @var string
      */
     private $_current = 'normal';
 
     /**
-     * _pos  
-     * 
+     * _pos
+     *
      * @var int
      */
     private $_pos = -1;
 
     /**
-     * _definitions  
-     * 
+     * _definitions
+     *
      * @var array
      */
     private $_definitions = [];
@@ -92,9 +92,9 @@ class Parser
     }
 
     /**
-     * makeHtml  
-     * 
-     * @param mixed $text 
+     * makeHtml
+     *
+     * @param mixed $text
      * @return string
      */
     public function makeHtml($text)
@@ -165,8 +165,8 @@ class Parser
     }
 
     /**
-     * parse 
-     * 
+     * parse
+     *
      * @param string $text
      * @return string
      */
@@ -186,7 +186,7 @@ class Parser
 
             $html .= $result;
         }
-        
+
         return $html;
     }
 
@@ -233,9 +233,9 @@ class Parser
     }
 
     /**
-     * parseInline 
-     * 
-     * @param string $text 
+     * parseInline
+     *
+     * @param string $text
      * @param string $whiteList
      * @param bool $clearHolders
      * @return string
@@ -299,11 +299,11 @@ class Parser
             $escaped = $this->parseInline($this->escapeBracket($matches[1]), '', false);
             $url = $this->escapeBracket($matches[2]);
             return $this->makeHolder("<a href=\"{$url}\">{$escaped}</a>");
-        }, $text); 
+        }, $text);
 
         $text = preg_replace_callback("/\[((?:[^\]]|\\]|\\[)+?)\]\[((?:[^\]]|\\]|\\[)+?)\]/", function ($matches) {
             $escaped = $this->parseInline($this->escapeBracket($matches[1]), '', false);
-            
+
             $result = isset($this->_definitions[$matches[2]]) ?
                 "<a href=\"{$this->_definitions[$matches[2]]}\">{$escaped}</a>"
                 : $escaped;
@@ -370,9 +370,9 @@ class Parser
     }
 
     /**
-     * parseBlock 
-     * 
-     * @param string $text 
+     * parseBlock
+     *
+     * @param string $text
      * @param array $lines
      * @return array
      */
@@ -604,6 +604,12 @@ class Parser
                         } else {
                             $this->startBlock('normal', $key);
                         }
+                    } else if ($this->isBlock('quote')) {
+                        if (preg_match("/^\s*$/", $line)) {
+                            $this->startBlock('normal', $key);
+                        } else {
+                            $this->setBlock($key);
+                        }
                     } else {
                         $block = $this->getBlock();
 
@@ -662,9 +668,9 @@ class Parser
     }
 
     /**
-     * parseCode 
-     * 
-     * @param array $lines 
+     * parseCode
+     *
+     * @param array $lines
      * @param array $parts
      * @return string
      */
@@ -689,9 +695,9 @@ class Parser
     }
 
     /**
-     * parsePre  
-     * 
-     * @param array $lines 
+     * parsePre
+     *
+     * @param array $lines
      * @return string
      */
     private function parsePre(array $lines)
@@ -705,10 +711,10 @@ class Parser
     }
 
     /**
-     * parseSh  
-     * 
-     * @param array $lines 
-     * @param int $num 
+     * parseSh
+     *
+     * @param array $lines
+     * @param int $num
      * @return string
      */
     private function parseSh(array $lines, $num)
@@ -718,10 +724,10 @@ class Parser
     }
 
     /**
-     * parseMh 
-     * 
-     * @param array $lines 
-     * @param int $num 
+     * parseMh
+     *
+     * @param array $lines
+     * @param int $num
      * @return string
      */
     private function parseMh(array $lines, $num)
@@ -731,9 +737,9 @@ class Parser
     }
 
     /**
-     * parseQuote 
-     * 
-     * @param array $lines 
+     * parseQuote
+     *
+     * @param array $lines
      * @return string
      */
     private function parseQuote(array $lines)
@@ -747,9 +753,9 @@ class Parser
     }
 
     /**
-     * parseList 
-     * 
-     * @param array $lines 
+     * parseList
+     *
+     * @param array $lines
      * @return string
      */
     private function parseList(array $lines)
@@ -913,8 +919,8 @@ class Parser
     }
 
     /**
-     * parseHr 
-     * 
+     * parseHr
+     *
      * @return string
      */
     private function parseHr()
@@ -923,9 +929,9 @@ class Parser
     }
 
     /**
-     * parseNormal  
-     * 
-     * @param array $lines 
+     * parseNormal
+     *
+     * @param array $lines
      * @return string
      */
     private function parseNormal(array $lines)
@@ -942,10 +948,10 @@ class Parser
     }
 
     /**
-     * parseFootnote 
-     * 
-     * @param array $lines 
-     * @param array $value 
+     * parseFootnote
+     *
+     * @param array $lines
+     * @param array $value
      * @return string
      */
     private function parseFootnote(array $lines, array $value)
@@ -962,8 +968,8 @@ class Parser
     }
 
     /**
-     * parseDefine  
-     * 
+     * parseDefine
+     *
      * @return string
      */
     private function parseDefinition()
@@ -972,16 +978,16 @@ class Parser
     }
 
     /**
-     * parseHtml 
-     * 
-     * @param array $lines 
+     * parseHtml
+     *
+     * @param array $lines
      * @param string $type
      * @return string
      */
     private function parseHtml(array $lines, $type)
     {
         foreach ($lines as &$line) {
-            $line = $this->parseInline($line, 
+            $line = $this->parseInline($line,
                 isset($this->_specialWhiteList[$type]) ? $this->_specialWhiteList[$type] : '');
         }
 
@@ -998,11 +1004,11 @@ class Parser
     }
 
     /**
-     * startBlock  
-     * 
-     * @param mixed $type 
+     * startBlock
+     *
+     * @param mixed $type
      * @param mixed $start
-     * @param mixed $value 
+     * @param mixed $value
      * @return $this
      */
     private function startBlock($type, $start, $value = NULL)
@@ -1011,13 +1017,13 @@ class Parser
         $this->_current = $type;
 
         $this->_blocks[$this->_pos] = [$type, $start, $start, $value];
-        
+
         return $this;
     }
 
     /**
-     * endBlock  
-     * 
+     * endBlock
+     *
      * @return $this
      */
     private function endBlock()
@@ -1027,21 +1033,21 @@ class Parser
     }
 
     /**
-     * isBlock  
-     * 
-     * @param mixed $type 
+     * isBlock
+     *
+     * @param mixed $type
      * @param mixed $value
      * @return bool
      */
     private function isBlock($type, $value = NULL)
     {
-        return $this->_current == $type 
+        return $this->_current == $type
             && (NULL === $value ? true : $this->_blocks[$this->_pos][3] == $value);
     }
 
     /**
-     * getBlock  
-     * 
+     * getBlock
+     *
      * @return array
      */
     private function getBlock()
@@ -1050,10 +1056,10 @@ class Parser
     }
 
     /**
-     * setBlock  
-     * 
-     * @param mixed $to 
-     * @param mixed $value 
+     * setBlock
+     *
+     * @param mixed $to
+     * @param mixed $value
      * @return $this
      */
     private function setBlock($to = NULL, $value = NULL)
@@ -1065,16 +1071,16 @@ class Parser
         if (NULL !== $value) {
             $this->_blocks[$this->_pos][3] = $value;
         }
-        
+
         return $this;
     }
 
     /**
-     * backBlock 
-     * 
-     * @param mixed $step 
-     * @param mixed $type 
-     * @param mixed $value 
+     * backBlock
+     *
+     * @param mixed $step
+     * @param mixed $type
+     * @param mixed $value
      * @return $this
      */
     private function backBlock($step, $type, $value = NULL)
@@ -1117,4 +1123,3 @@ class Parser
         return $this;
     }
 }
-
