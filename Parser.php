@@ -146,7 +146,7 @@ class Parser
             $html .= '<div class="footnotes"><hr><ol>';
             $index = 1;
 
-            while ($val = array_pop($this->_footnotes)) {
+            while ($val = array_shift($this->_footnotes)) {
                 if (is_string($val)) {
                     $val .= " <a href=\"#fnref-{$index}\" class=\"footnote-backref\">&#8617;</a>";
                 } else {
