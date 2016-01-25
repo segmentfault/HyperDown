@@ -99,9 +99,18 @@ class Parser
      */
     public function makeHtml($text)
     {
+        $this->_footnotes = [];
+        $this->_blocks = [];
+        $this->_current = 'normal';
+        $this->_pos = -1;
+        $this->_definitions = [];
+        $this->_holders = [];
+        $this->_uniqid = md5(uniqid());
+        $this->_id = 0;
+
         $text = $this->initText($text);
         $html = $this->parse($text);
-        return $this->makeFootnotes($html);
+        return $this->makeFootnotes($html); 
     }
 
     /**
