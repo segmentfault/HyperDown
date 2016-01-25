@@ -457,7 +457,7 @@ class Parser
 
             switch (true) {
                 // list
-                case preg_match("/^(\s*)((?:[0-9a-z]\.)|\-|\+|\*)\s+/", $line, $matches):
+                case preg_match("/^(\s*)((?:[0-9a-z]+\.)|\-|\+|\*)\s+/", $line, $matches):
                     $space = strlen($matches[1]);
                     $emptyCount = 0;
 
