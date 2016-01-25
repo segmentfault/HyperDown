@@ -33,35 +33,35 @@ class Parser
      *
      * @var array
      */
-    private $_footnotes = [];
+    private $_footnotes;
 
     /**
      * _blocks
      *
      * @var array
      */
-    private $_blocks = [];
+    private $_blocks;
 
     /**
      * _current
      *
      * @var string
      */
-    private $_current = 'normal';
+    private $_current;
 
     /**
      * _pos
      *
      * @var int
      */
-    private $_pos = -1;
+    private $_pos;
 
     /**
      * _definitions
      *
      * @var array
      */
-    private $_definitions = [];
+    private $_definitions;
 
     /**
      * @var array
@@ -71,25 +71,17 @@ class Parser
     /**
      * @var array
      */
-    private $_holders = [];
+    private $_holders;
 
     /**
      * @var string
      */
-    private $_uniqid = '';
+    private $_uniqid;
 
     /**
      * @var int
      */
-    private $_id = 0;
-
-    /**
-     * init uniqid
-     */
-    public function __construct()
-    {
-        $this->_uniqid = md5(uniqid());
-    }
+    private $_id;
 
     /**
      * makeHtml
