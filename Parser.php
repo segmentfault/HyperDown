@@ -454,7 +454,7 @@ class Parser
                     }
                     break;
 
-                    // pre block
+                // pre block
                 case preg_match("/^ {4}/", $line):
                     $emptyCount = 0;
 
