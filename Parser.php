@@ -418,19 +418,6 @@ class Parser
                 continue;
             }
 
-            // pre block
-            if (preg_match("/^ {4}/", $line)) {
-                $emptyCount = 0;
-
-                if ($this->isBlock('pre') || $this->isBlock('list')) {
-                    $this->setBlock($key);
-                    continue;
-                } else if ($this->isBlock('normal')) {
-                    $this->startBlock('pre', $key);
-                    continue;
-                }
-            }
-
             // html block is special too
             if (preg_match("/^\s*<({$special})(\s+[^>]*)?>/i", $line, $matches)) {
                 $tag = strtolower($matches[1]);
@@ -464,6 +451,17 @@ class Parser
                         $this->setBlock($key, $space);
                     } else {
                         $this->startBlock('list', $key, $space);
+                    }
+                    break;
+
+                    // pre block
+                case preg_match("/^ {4}/", $line):
+                    $emptyCount = 0;
+
+                    if ($this->isBlock('pre') || $this->isBlock('list')) {
+                        $this->setBlock($key);
+                    } else if ($this->isBlock('normal')) {
+                        $this->startBlock('pre', $key);
                     }
                     break;
 
