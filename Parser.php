@@ -319,7 +319,7 @@ class Parser
         $text = preg_replace("/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/i", "<a href=\"mailto:\\1\">\\1</a>", $text);
 
         // autolink url
-        $text = preg_replace("/(^|[^\"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",
+        $text = preg_replace("/(^|[^\"])((http|https|ftp|mailto):[\u4e00-\u9fa5_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",
             "\\1<a href=\"\\2\">\\2</a>\\4", $text);
 
         $text = $this->call('afterParseInlineBeforeRelease', $text);
