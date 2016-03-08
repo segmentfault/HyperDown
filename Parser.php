@@ -236,6 +236,7 @@ class Parser
      * @param string $text
      * @param string $whiteList
      * @param bool $clearHolders
+     * @param bool $enableAutoLink
      * @return string
      */
     private function parseInline($text, $whiteList = '', $clearHolders = true, $enableAutoLink = true)
@@ -320,7 +321,7 @@ class Parser
 
         // autolink url
         if($enableAutoLink){
-            $text = preg_replace("/(^|[^\"])((http|https|ftp|mailto):[\u4e00-\u9fa5_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",
+            $text = preg_replace("/(^|[^\"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",
                 "\\1<a href=\"\\2\">\\2</a>\\4", $text);
 
             $text = $this->call('afterParseInlineBeforeRelease', $text);
