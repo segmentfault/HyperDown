@@ -238,7 +238,7 @@ class Parser
      * @param bool $clearHolders
      * @return string
      */
-    private function parseInline($text, $whiteList = '', $clearHolders = true)
+    private function parseInline($text, $whiteList = '', $clearHolders = true, $enableAutoLink = true)
     {
         $text = $this->call('beforeParseInline', $text);
 
@@ -294,13 +294,13 @@ class Parser
 
         // link
         $text = preg_replace_callback("/\[((?:[^\]]|\\]|\\[)+?)\]\(((?:[^\)]|\\)|\\()+?)\)/", function ($matches) {
-            $escaped = $this->parseInline($this->escapeBracket($matches[1]), '', false);
+            $escaped = $this->parseInline($this->escapeBracket($matches[1]), '', false, false);
             $url = $this->escapeBracket($matches[2]);
             return $this->makeHolder("<a href=\"{$url}\">{$escaped}</a>");
         }, $text);
 
         $text = preg_replace_callback("/\[((?:[^\]]|\\]|\\[)+?)\]\[((?:[^\]]|\\]|\\[)+?)\]/", function ($matches) {
-            $escaped = $this->parseInline($this->escapeBracket($matches[1]), '', false);
+            $escaped = $this->parseInline($this->escapeBracket($matches[1]), '', false, false);
 
             $result = isset($this->_definitions[$matches[2]]) ?
                 "<a href=\"{$this->_definitions[$matches[2]]}\">{$escaped}</a>"
@@ -319,13 +319,15 @@ class Parser
         $text = preg_replace("/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/i", "<a href=\"mailto:\\1\">\\1</a>", $text);
 
         // autolink url
-        $text = preg_replace("/(^|[^\"])((http|https|ftp|mailto):[\u4e00-\u9fa5_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",
-            "\\1<a href=\"\\2\">\\2</a>\\4", $text);
+        if($enableAutoLink){
+            $text = preg_replace("/(^|[^\"])((http|https|ftp|mailto):[\u4e00-\u9fa5_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",
+                "\\1<a href=\"\\2\">\\2</a>\\4", $text);
 
-        $text = $this->call('afterParseInlineBeforeRelease', $text);
-        $text = $this->releaseHolder($text, $clearHolders);
+            $text = $this->call('afterParseInlineBeforeRelease', $text);
+            $text = $this->releaseHolder($text, $clearHolders);
 
-        $text = $this->call('afterParseInline', $text);
+            $text = $this->call('afterParseInline', $text);
+        }
 
         return $text;
     }
