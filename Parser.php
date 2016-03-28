@@ -294,15 +294,6 @@ class Parser
         }, $text);
 
         // link
-        $linkTitleSlice = function ($title){
-            if( preg_match("/(^|[^\"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",$title)){
-                if (mb_strlen($title)>40){
-                    $title = mb_strcut($title,0,40).'...';
-                }
-            }
-            return $title;
-
-        };
         $text = preg_replace_callback("/\[((?:[^\]]|\\]|\\[)+?)\]\(((?:[^\)]|\\)|\\()+?)\)/", function ($matches) {
             $escaped = $this->parseInline($this->escapeBracket($matches[1]), '', false, false);
             $escaped = $this->linkTextLimit($escaped);
