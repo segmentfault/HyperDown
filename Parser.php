@@ -331,9 +331,6 @@ class Parser
 
         // autolink url
         if($enableAutoLink){
-            $text = preg_replace("/(^|[^\"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",
-                "\\1<a href=\"\\2\">\\2</a>\\4", $text);
-
             $text = preg_replace_callback("/(^|[^\"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",
                 function($matches){
                     return $matches[1]."<a href=\". $matches[2] .\">". $this->linkTextLimit($matches[2]) ."</a>".$matches[4];
