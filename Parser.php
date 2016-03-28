@@ -324,7 +324,7 @@ class Parser
         if($enableAutoLink){
             $text = preg_replace_callback("/(^|[^\"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",
                 function($matches){
-                    return $matches[1]."<a href=\". $matches[2] .\">". $this->linkTextLimit($matches[2]) ."</a>".$matches[4];
+                    return $matches[1]."<a href=\"". $matches[2] ."\">". $this->linkTextLimit($matches[2]) ."</a>".$matches[4];
                 }, $text);
 
             $text = $this->call('afterParseInlineBeforeRelease', $text);
