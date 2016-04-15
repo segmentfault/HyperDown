@@ -692,7 +692,7 @@ class Parser
 
         return preg_match("/^\s*$/", $str) ? '' :
             '<pre><code' . (!empty($lang) ? " class=\"{$lang}\"" : '') . '>'
-            . htmlspecialchars(implode("\n", $lines)) . '</code></pre>';
+            . htmlspecialchars($str) . '</code></pre>';
     }
 
     /**
@@ -733,8 +733,7 @@ class Parser
      */
     private function parseMh(array $lines, $num)
     {
-        $line = $this->parseInline(trim($lines[0], '# '));
-        return preg_match("/^\s*$/", $line) ? '' : "<h{$num}>{$line}</h{$num}>";
+        return $this->parseSh($lines, $num);
     }
 
     /**
