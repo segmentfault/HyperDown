@@ -236,9 +236,10 @@ class Parser
      * @param string $text
      * @param string $whiteList
      * @param bool $clearHolders
+     * @param bool $enableAutoLink
      * @return string
      */
-    private function parseInline($text, $whiteList = '', $clearHolders = true)
+    private function parseInline($text, $whiteList = '', $clearHolders = true, $enableAutoLink = true)
     {
         $text = $this->call('beforeParseInline', $text);
 
@@ -294,14 +295,15 @@ class Parser
 
         // link
         $text = preg_replace_callback("/\[((?:[^\]]|\\]|\\[)+?)\]\(((?:[^\)]|\\)|\\()+?)\)/", function ($matches) {
-            $escaped = $this->parseInline($this->escapeBracket($matches[1]), '', false);
+            $escaped = $this->parseInline($this->escapeBracket($matches[1]), '', false, false);
+            $escaped = $this->linkTextLimit($escaped);
             $url = $this->escapeBracket($matches[2]);
             return $this->makeHolder("<a href=\"{$url}\">{$escaped}</a>");
         }, $text);
 
         $text = preg_replace_callback("/\[((?:[^\]]|\\]|\\[)+?)\]\[((?:[^\]]|\\]|\\[)+?)\]/", function ($matches) {
-            $escaped = $this->parseInline($this->escapeBracket($matches[1]), '', false);
-
+            $escaped = $this->parseInline($this->escapeBracket($matches[1]), '', false, false);
+            $escaped = $this->linkTextLimit($escaped);
             $result = isset($this->_definitions[$matches[2]]) ?
                 "<a href=\"{$this->_definitions[$matches[2]]}\">{$escaped}</a>"
                 : $escaped;
@@ -319,14 +321,33 @@ class Parser
         $text = preg_replace("/<([_a-z0-9-\.\+]+@[^@]+\.[a-z]{2,})>/i", "<a href=\"mailto:\\1\">\\1</a>", $text);
 
         // autolink url
-        $text = preg_replace("/(^|[^\"])((http|https|ftp|mailto):[_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",
-            "\\1<a href=\"\\2\">\\2</a>\\4", $text);
+        if($enableAutoLink){
+            $text = preg_replace_callback("/(^|[^\"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",
+                function($matches){
+                    return $matches[1]."<a href=\"". $matches[2] ."\">". $this->linkTextLimit($matches[2]) ."</a>".$matches[4];
+                }, $text);
 
-        $text = $this->call('afterParseInlineBeforeRelease', $text);
-        $text = $this->releaseHolder($text, $clearHolders);
+            $text = $this->call('afterParseInlineBeforeRelease', $text);
+            $text = $this->releaseHolder($text, $clearHolders);
 
-        $text = $this->call('afterParseInline', $text);
+            $text = $this->call('afterParseInline', $text);
+        }
 
+        return $text;
+    }
+
+    /**
+     * @param $text
+     * @param int $length
+     * @return string
+     */
+
+    private function linkTextLimit($text,$length=40){
+        if( preg_match("/(^|[^\"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",$text)){
+            if (mb_strlen($text)>$length){
+                $text = mb_strcut($text,0,$length).'...';
+            }
+        }
         return $text;
     }
 
