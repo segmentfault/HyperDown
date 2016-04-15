@@ -254,7 +254,7 @@ class Parser
 
         // encode unsafe tags
         $text = preg_replace_callback("/<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/i", function ($matches) use ($whiteList) {
-            if (stripos($this->_commonWhiteList . '|' . $whiteList, $matches[2]) !== false) {
+            if (stripos('|' . $this->_commonWhiteList . '|' . $whiteList . '|', '|' . $matches[2] . '|') !== false) {
                 return $this->makeHolder($matches[0]);
             } else {
                 return htmlspecialchars($matches[0]);
