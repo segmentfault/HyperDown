@@ -296,14 +296,12 @@ class Parser
         // link
         $text = preg_replace_callback("/\[((?:[^\]]|\\]|\\[)+?)\]\(((?:[^\)]|\\)|\\()+?)\)/", function ($matches) {
             $escaped = $this->parseInline($this->escapeBracket($matches[1]), '', false, false);
-            $escaped = $this->linkTextLimit($escaped);
             $url = $this->escapeBracket($matches[2]);
             return $this->makeHolder("<a href=\"{$url}\">{$escaped}</a>");
         }, $text);
 
         $text = preg_replace_callback("/\[((?:[^\]]|\\]|\\[)+?)\]\[((?:[^\]]|\\]|\\[)+?)\]/", function ($matches) {
             $escaped = $this->parseInline($this->escapeBracket($matches[1]), '', false, false);
-            $escaped = $this->linkTextLimit($escaped);
             $result = isset($this->_definitions[$matches[2]]) ?
                 "<a href=\"{$this->_definitions[$matches[2]]}\">{$escaped}</a>"
                 : $escaped;
@@ -323,31 +321,13 @@ class Parser
         // autolink url
         if($enableAutoLink){
             $text = preg_replace_callback("/(^|[^\"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",
-                function($matches){
-                    return $matches[1]."<a href=\"". $matches[2] ."\">". $this->linkTextLimit($matches[2]) ."</a>".$matches[4];
-                }, $text);
-
-            $text = $this->call('afterParseInlineBeforeRelease', $text);
-            $text = $this->releaseHolder($text, $clearHolders);
-
-            $text = $this->call('afterParseInline', $text);
+                "\\1<a href=\"\\2\">\\2</a>\\4", $text);
         }
 
-        return $text;
-    }
+        $text = $this->call('afterParseInlineBeforeRelease', $text);
+        $text = $this->releaseHolder($text, $clearHolders);
 
-    /**
-     * @param $text
-     * @param int $length
-     * @return string
-     */
-
-    private function linkTextLimit($text,$length=40){
-        if( preg_match("/(^|[^\"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",$text)){
-            if (mb_strlen($text)>$length){
-                $text = mb_strcut($text,0,$length).'...';
-            }
-        }
+        $text = $this->call('afterParseInline', $text);
         return $text;
     }
 
