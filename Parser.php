@@ -320,7 +320,7 @@ class Parser
 
         // autolink url
         if($enableAutoLink){
-            $text = preg_replace_callback("/(^|[^\"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",
+            $text = preg_replace("/(^|[^\"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",
                 "\\1<a href=\"\\2\">\\2</a>\\4", $text);
         }
 
@@ -491,14 +491,14 @@ class Parser
                 // table
                 case preg_match("/^((?:(?:(?:[ :]*\-[ :]*)+(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-[ :]*)+)|(?:(?:[ :]*\-[ :]*)+(?:\||\+)(?:[ :]*\-[ :]*)+))+)$/", $line, $matches):
                     if ($this->isBlock('normal')) {
-                        $head = false;
+                        $head = 0;
 
                         if (empty($block) ||
                             $block[0] != 'normal' ||
                             preg_match("/^\s*$/", $lines[$block[2]])) {
                             $this->startBlock('table', $key);
                         } else {
-                            $head = true;
+                            $head = 1;
                             $this->backBlock(1, 'table');
                         }
 
@@ -528,7 +528,11 @@ class Parser
                             $aligns[] = $align;
                         }
 
-                        $this->setBlock($key, [$head, $aligns]);
+                        $this->setBlock($key, [[$head], $aligns, $head + 1]);
+                    } else {
+                        $block[3][0][] = $block[3][2];
+                        $block[3][2] ++;
+                        $this->setBlock($key, $block[3]);
                     }
                     break;
 
@@ -582,7 +586,8 @@ class Parser
                         }
                     } else if ($this->isBlock('table')) {
                         if (false !== strpos($line, '|')) {
-                            $this->setBlock($key);
+                            $block[3][2] ++;
+                            $this->setBlock($key, $block[3]);
                         } else {
                             $this->startBlock('normal', $key);
                         }
@@ -832,21 +837,24 @@ class Parser
      */
     private function parseTable(array $lines, array $value)
     {
-        list ($head, $aligns) = $value;
-        $ignore = $head ? 1 : 0;
+        list ($ignores, $aligns) = $value;
+        $head = count($ignores) > 0;
 
         $html = '<table>';
         $body = NULL;
+        $output = false;
 
         foreach ($lines as $key => $line) {
-            if ($key == $ignore) {
-                $head = false;
-                $body = true;
+            if (in_array($key, $ignores)) {
+                if ($head && $output) {
+                    $head = false;
+                    $body = true;
+                }
                 continue;
             }
 
-
             $line = trim($line);
+            $output = true;
 
             if ($line[0] == '|') {
                 $line = substr($line, 1);

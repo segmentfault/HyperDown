@@ -13,5 +13,10 @@
 	},
 	"autoload": {
  		"psr-4": { "HyperDown\\": "./" }
-	}
+	},
+    "scripts": {
+        "test": [
+            "php test/test.php"
+        ]
+    }
 }
