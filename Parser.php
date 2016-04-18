@@ -687,8 +687,15 @@ class Parser
         $lang = trim($lang);
         $count = strlen($blank);
 
-        if (!preg_match("/^[_a-z0-9-\+\#]+$/i", $lang)) {
+        if (!preg_match("/^[_a-z0-9-\+\#\:\.]+$/i", $lang)) {
             $lang = NULL;
+        } else {
+            $parts = explode(':', $lang);
+            if (count($parts) > 1) {
+                list ($lang, $rel) = $parts;
+                $lang = trim($lang);
+                $rel = trim($rel);
+            }
         }
 
         $lines = array_map(function ($line) use ($count) {
@@ -697,7 +704,8 @@ class Parser
         $str = implode("\n", $lines);
 
         return preg_match("/^\s*$/", $str) ? '' :
-            '<pre><code' . (!empty($lang) ? " class=\"{$lang}\"" : '') . '>'
+            '<pre><code' . (!empty($lang) ? " class=\"{$lang}\"" : '')
+            . (!empty($rel) ? " rel=\"{$rel}\"" : '') . '>'
             . htmlspecialchars($str) . '</code></pre>';
     }
 
