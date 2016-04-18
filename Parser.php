@@ -310,7 +310,7 @@ class Parser
         }, $text);
 
         // escape
-        $text = preg_replace_callback("/\\\(`|\*|_|~)/", function ($matches) {
+        $text = preg_replace_callback("/\\\(x80-xff|.)/", function ($matches) {
             return $this->makeHolder(htmlspecialchars($matches[1]));
         }, $text);
 
