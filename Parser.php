@@ -241,14 +241,14 @@ class Parser
      */
     public function parseInline($text, $whiteList = '', $clearHolders = true, $enableAutoLink = true)
     {
-        $_This = $this;
+        $self = $this;
         $text = $this->call('beforeParseInline', $text);
 
         // code
         $text = preg_replace_callback(
             "/(^|[^\\\])(`+)(.+?)\\2/",
-            function ($matches) use ($_This) {
-                return  $matches[1] . $_This->makeHolder(
+            function ($matches) use ($self) {
+                return  $matches[1] . $self->makeHolder(
                     '<code>' . htmlspecialchars($matches[3]) . '</code>'
                 );
             },
@@ -257,8 +257,8 @@ class Parser
         // link
         $text = preg_replace_callback(
             "/<(https?:\/\/.+)>/i",
-            function ($matches) use ($_This) {
-                return $_This->makeHolder(
+            function ($matches) use ($self) {
+                return $self->makeHolder(
                     "<a href=\"{$matches[1]}\">{$matches[1]}</a>"
                 );
             },
@@ -267,11 +267,11 @@ class Parser
         // encode unsafe tags
         $text = preg_replace_callback(
             "/<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/i",
-            function ($matches) use ($_This, $whiteList) {
+            function ($matches) use ($self, $whiteList) {
                 if (false !== stripos(
-                    '|' . $_This->_commonWhiteList . '|' . $whiteList . '|', '|' . $matches[2] . '|'
+                    '|' . $self->_commonWhiteList . '|' . $whiteList . '|', '|' . $matches[2] . '|'
                 )) {
-                    return $_This->makeHolder($matches[0]);
+                    return $self->makeHolder($matches[0]);
                 } else {
                     return htmlspecialchars($matches[0]);
                 }
@@ -284,15 +284,15 @@ class Parser
         // footnote
         $text = preg_replace_callback(
             "/\[\^((?:[^\]]|\\]|\\[)+?)\]/",
-            function ($matches) use ($_This) {
-                $id = array_search($matches[1], $_This->_footnotes);
+            function ($matches) use ($self) {
+                $id = array_search($matches[1], $self->_footnotes);
 
                 if (false === $id) {
-                    $id = count($_This->_footnotes) + 1;
-                    $_This->_footnotes[$id] = $_This->parseInline($matches[1], '', false);
+                    $id = count($self->_footnotes) + 1;
+                    $self->_footnotes[$id] = $self->parseInline($matches[1], '', false);
                 }
 
-                return $_This->makeHolder(
+                return $self->makeHolder(
                     "<sup id=\"fnref-{$id}\"><a href=\"#fn-{$id}\" class=\"footnote-ref\">{$id}</a></sup>"
                 );
             },
@@ -301,10 +301,10 @@ class Parser
         // image
         $text = preg_replace_callback(
             "/!\[((?:[^\]]|\\]|\\[)*?)\]\(((?:[^\)]|\\)|\\()+?)\)/",
-            function ($matches) use ($_This) {
-                $escaped = $_This->escapeBracket($matches[1]);
-                $url = $_This->escapeBracket($matches[2]);
-                return $_This->makeHolder(
+            function ($matches) use ($self) {
+                $escaped = $self->escapeBracket($matches[1]);
+                $url = $self->escapeBracket($matches[2]);
+                return $self->makeHolder(
                     "<img src=\"{$url}\" alt=\"{$escaped}\" title=\"{$escaped}\">"
                 );
             },
@@ -312,48 +312,48 @@ class Parser
         );
         $text = preg_replace_callback(
             "/!\[((?:[^\]]|\\]|\\[)*?)\]\[((?:[^\]]|\\]|\\[)+?)\]/",
-            function ($matches) use ($_This) {
-                $escaped = $_This->escapeBracket($matches[1]);
+            function ($matches) use ($self) {
+                $escaped = $self->escapeBracket($matches[1]);
 
-                $result = isset( $_This->_definitions[$matches[2]] ) ?
-                    "<img src=\"{$_This->_definitions[$matches[2]]}\" alt=\"{$escaped}\" title=\"{$escaped}\">"
+                $result = isset( $self->_definitions[$matches[2]] ) ?
+                    "<img src=\"{$self->_definitions[$matches[2]]}\" alt=\"{$escaped}\" title=\"{$escaped}\">"
                     : $escaped;
 
-                return $_This->makeHolder($result);
+                return $self->makeHolder($result);
             },
             $text
         );
         // link
         $text = preg_replace_callback(
             "/\[((?:[^\]]|\\]|\\[)+?)\]\(((?:[^\)]|\\)|\\()+?)\)/",
-            function ($matches) use ($_This) {
-                $escaped = $_This->parseInline(
-                    $_This->escapeBracket($matches[1]),  '',  false, false
+            function ($matches) use ($self) {
+                $escaped = $self->parseInline(
+                    $self->escapeBracket($matches[1]),  '',  false, false
                 );
-                $url = $_This->escapeBracket($matches[2]);
-                return $_This->makeHolder("<a href=\"{$url}\">{$escaped}</a>");
+                $url = $self->escapeBracket($matches[2]);
+                return $self->makeHolder("<a href=\"{$url}\">{$escaped}</a>");
             },
             $text
         );
         $text = preg_replace_callback(
             "/\[((?:[^\]]|\\]|\\[)+?)\]\[((?:[^\]]|\\]|\\[)+?)\]/",
-            function ($matches) use ($_This) {
-                $escaped = $_This->parseInline(
-                    $_This->escapeBracket($matches[1]),  '',  false
+            function ($matches) use ($self) {
+                $escaped = $self->parseInline(
+                    $self->escapeBracket($matches[1]),  '',  false
                 );
-                $result = isset( $_This->_definitions[$matches[2]] ) ?
-                    "<a href=\"{$_This->_definitions[$matches[2]]}\">{$escaped}</a>"
+                $result = isset( $self->_definitions[$matches[2]] ) ?
+                    "<a href=\"{$self->_definitions[$matches[2]]}\">{$escaped}</a>"
                     : $escaped;
 
-                return $_This->makeHolder($result);
+                return $self->makeHolder($result);
             },
             $text
         );
         // escape
         $text = preg_replace_callback(
             "/\\\(x80-xff|.)/",
-            function ($matches) use ($_This) {
-                return  $_This->makeHolder( htmlspecialchars($matches[1]) );
+            function ($matches) use ($self) {
+                return  $self->makeHolder( htmlspecialchars($matches[1]) );
             },
             $text
         );
@@ -386,67 +386,67 @@ class Parser
      */
     public function parseInlineCallback($text)
     {
-        $_This = $this;
+        $self = $this;
 
         $text = preg_replace_callback(
             "/(\*{3})(.+?)\\1/",
-            function ($matches) use ($_This) {
+            function ($matches) use ($self) {
                 return  '<strong><em>' .
-                    $_This->parseInlineCallback($matches[2]) .
+                    $self->parseInlineCallback($matches[2]) .
                     '</em></strong>';
             },
             $text
         );
         $text = preg_replace_callback(
             "/(\*{2})(.+?)\\1/",
-            function ($matches) use ($_This) {
+            function ($matches) use ($self) {
                 return  '<strong>' .
-                    $_This->parseInlineCallback($matches[2]) .
+                    $self->parseInlineCallback($matches[2]) .
                     '</strong>';
             },
             $text
         );
         $text = preg_replace_callback(
             "/(\*)(.+?)\\1/",
-            function ($matches) use ($_This) {
+            function ($matches) use ($self) {
                 return  '<em>' .
-                    $_This->parseInlineCallback($matches[2]) .
+                    $self->parseInlineCallback($matches[2]) .
                     '</em>';
             },
             $text
         );
         $text = preg_replace_callback(
             "/(\s+|^)(_{3})(.+?)\\2(\s+|$)/",
-            function ($matches) use ($_This) {
+            function ($matches) use ($self) {
                 return  $matches[1] . '<strong><em>' .
-                    $_This->parseInlineCallback($matches[3]) .
+                    $self->parseInlineCallback($matches[3]) .
                     '</em></strong>' . $matches[4];
             },
             $text
         );
         $text = preg_replace_callback(
             "/(\s+|^)(_{2})(.+?)\\2(\s+|$)/",
-            function ($matches) use ($_This) {
+            function ($matches) use ($self) {
                 return  $matches[1] . '<strong>' .
-                    $_This->parseInlineCallback($matches[3]) .
+                    $self->parseInlineCallback($matches[3]) .
                     '</strong>' . $matches[4];
             },
             $text
         );
         $text = preg_replace_callback(
             "/(\s+|^)(_)(.+?)\\2(\s+|$)/",
-            function ($matches) use ($_This) {
+            function ($matches) use ($self) {
                 return  $matches[1] . '<em>' .
-                    $_This->parseInlineCallback($matches[3]) .
+                    $self->parseInlineCallback($matches[3]) .
                     '</em>' . $matches[4];
             },
             $text
         );
         $text = preg_replace_callback(
             "/(~{2})(.+?)\\1/",
-            function ($matches) use ($_This) {
+            function ($matches) use ($self) {
                 return  '<del>' .
-                    $_This->parseInlineCallback($matches[2]) .
+                    $self->parseInlineCallback($matches[2]) .
                     '</del>';
             },
             $text
