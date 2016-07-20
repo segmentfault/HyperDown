@@ -360,7 +360,9 @@ class Parser
         $text = preg_replace_callback(
             "/\\\(x80-xff|.)/",
             function ($matches) use ($self) {
-                return  $self->makeHolder( htmlspecialchars($matches[1]) );
+                $escaped = htmlspecialchars($matches[1]);
+                $escaped = str_replace('$', '&dollar;', $escaped);
+                return  $self->makeHolder($escaped);
             },
             $text
         );
