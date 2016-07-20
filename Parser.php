@@ -254,6 +254,7 @@ class Parser
             },
             $text
         );
+
         // link
         $text = preg_replace_callback(
             "/<(https?:\/\/.+)>/i",
@@ -264,6 +265,7 @@ class Parser
             },
             $text
         );
+
         // encode unsafe tags
         $text = preg_replace_callback(
             "/<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/i",
@@ -283,7 +285,7 @@ class Parser
 
         // footnote
         $text = preg_replace_callback(
-            "/\[\^((?:[^\]]|\\]|\\[)+?)\]/",
+            "/\[\^((?:[^\]]|\\\\\]|\\\\\[)+?)\]/",
             function ($matches) use ($self) {
                 $id = array_search($matches[1], $self->_footnotes);
 
@@ -298,9 +300,10 @@ class Parser
             },
             $text
         );
+
         // image
         $text = preg_replace_callback(
-            "/!\[((?:[^\]]|\\]|\\[)*?)\]\(((?:[^\)]|\\)|\\()+?)\)/",
+            "/!\[((?:[^\]]|\\\\\]|\\\\\[)*?)\]\(((?:[^\)]|\\\\\)|\\\\\()+?)\)/",
             function ($matches) use ($self) {
                 $escaped = $self->escapeBracket($matches[1]);
                 $url = $self->escapeBracket($matches[2]);
@@ -310,8 +313,9 @@ class Parser
             },
             $text
         );
+
         $text = preg_replace_callback(
-            "/!\[((?:[^\]]|\\]|\\[)*?)\]\[((?:[^\]]|\\]|\\[)+?)\]/",
+            "/!\[((?:[^\]]|\\\\\]|\\\\\[)*?)\]\[((?:[^\]]|\\\\\]|\\\\\[)+?)\]/",
             function ($matches) use ($self) {
                 $escaped = $self->escapeBracket($matches[1]);
 
@@ -323,9 +327,10 @@ class Parser
             },
             $text
         );
+
         // link
         $text = preg_replace_callback(
-            "/\[((?:[^\]]|\\]|\\[)+?)\]\(((?:[^\)]|\\)|\\()+?)\)/",
+            "/\[((?:[^\]]|\\\\\]|\\\\\[)+?)\]\(((?:[^\)]|\\\\\)|\\\\\()+?)\)/",
             function ($matches) use ($self) {
                 $escaped = $self->parseInline(
                     $self->escapeBracket($matches[1]),  '',  false, false
@@ -335,8 +340,9 @@ class Parser
             },
             $text
         );
+
         $text = preg_replace_callback(
-            "/\[((?:[^\]]|\\]|\\[)+?)\]\[((?:[^\]]|\\]|\\[)+?)\]/",
+            "/\[((?:[^\]]|\\\\\]|\\\\\[)+?)\]\[((?:[^\]]|\\\\\]|\\\\\[)+?)\]/",
             function ($matches) use ($self) {
                 $escaped = $self->parseInline(
                     $self->escapeBracket($matches[1]),  '',  false
@@ -349,6 +355,7 @@ class Parser
             },
             $text
         );
+
         // escape
         $text = preg_replace_callback(
             "/\\\(x80-xff|.)/",
@@ -357,6 +364,7 @@ class Parser
             },
             $text
         );
+
         // strong and em and some fuck
         $text = $this->parseInlineCallback($text);
         $text = preg_replace(
@@ -364,6 +372,7 @@ class Parser
             "<a href=\"mailto:\\1\">\\1</a>",
             $text
         );
+
         // autolink url
         if ($enableAutoLink)
             $text = preg_replace(
@@ -397,6 +406,7 @@ class Parser
             },
             $text
         );
+
         $text = preg_replace_callback(
             "/(\*{2})(.+?)\\1/",
             function ($matches) use ($self) {
@@ -406,6 +416,7 @@ class Parser
             },
             $text
         );
+
         $text = preg_replace_callback(
             "/(\*)(.+?)\\1/",
             function ($matches) use ($self) {
@@ -415,6 +426,7 @@ class Parser
             },
             $text
         );
+
         $text = preg_replace_callback(
             "/(\s+|^)(_{3})(.+?)\\2(\s+|$)/",
             function ($matches) use ($self) {
@@ -424,6 +436,7 @@ class Parser
             },
             $text
         );
+
         $text = preg_replace_callback(
             "/(\s+|^)(_{2})(.+?)\\2(\s+|$)/",
             function ($matches) use ($self) {
@@ -433,6 +446,7 @@ class Parser
             },
             $text
         );
+
         $text = preg_replace_callback(
             "/(\s+|^)(_)(.+?)\\2(\s+|$)/",
             function ($matches) use ($self) {
@@ -442,6 +456,7 @@ class Parser
             },
             $text
         );
+
         $text = preg_replace_callback(
             "/(~{2})(.+?)\\1/",
             function ($matches) use ($self) {
@@ -531,6 +546,17 @@ class Parser
             }
 
             switch (true) {
+                // pre block
+                case preg_match("/^ {4}/", $line):
+                    $emptyCount = 0;
+
+                    if ($this->isBlock('pre') || $this->isBlock('list')) {
+                        $this->setBlock($key);
+                    } else if ($this->isBlock('normal')) {
+                        $this->startBlock('pre', $key);
+                    }
+                    break;
+
                 // list
                 case preg_match("/^(\s*)((?:[0-9a-z]+\.)|\-|\+|\*)\s+/", $line, $matches):
                     $space = strlen($matches[1]);
@@ -542,18 +568,7 @@ class Parser
                     } else {
                         $this->startBlock('list', $key, $space);
                     }
-                    break;
-
-                // pre block
-                case preg_match("/^ {4}/", $line):
-                    $emptyCount = 0;
-
-                    if ($this->isBlock('pre') || $this->isBlock('list')) {
-                        $this->setBlock($key);
-                    } else if ($this->isBlock('normal')) {
-                        $this->startBlock('pre', $key);
-                    }
-                    break;
+                    break; 
 
                 // footnote
                 case preg_match("/^\[\^((?:[^\]]|\\]|\\[)+?)\]:/", $line, $matches):
@@ -581,7 +596,11 @@ class Parser
 
                 // table
                 case preg_match("/^((?:(?:(?:[ :]*\-[ :]*)+(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-[ :]*)+)|(?:(?:[ :]*\-[ :]*)+(?:\||\+)(?:[ :]*\-[ :]*)+))+)$/", $line, $matches):
-                    if ($this->isBlock('normal')) {
+                    if ($this->isBlock('table')) {
+                        $block[3][0][] = $block[3][2];
+                        $block[3][2] ++;
+                        $this->setBlock($key, $block[3]);
+                    } else { 
                         $head = 0;
 
                         if (empty($block) ||
@@ -620,10 +639,6 @@ class Parser
                         }
 
                         $this->setBlock($key, array(array($head), $aligns, $head + 1));
-                    } else {
-                        $block[3][0][] = $block[3][2];
-                        $block[3][2] ++;
-                        $this->setBlock($key, $block[3]);
                     }
                     break;
 
@@ -892,7 +907,7 @@ class Parser
                 $found = true;
             }
         }
-        $secondMinSpace = $found ?: $minSpace;
+        $secondMinSpace = $found ? $secondMinSpace : $minSpace;
 
         $lastType = '';
         $leftLines = array();
