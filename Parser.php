@@ -259,6 +259,7 @@ class Parser
         $text = preg_replace_callback(
             "/<(https?:\/\/.+)>/i",
             function ($matches) use ($self) {
+                $matches[1] = $self->cleanUrl($matches[1]);
                 return $self->makeHolder(
                     "<a href=\"{$matches[1]}\">{$matches[1]}</a>"
                 );
@@ -307,6 +308,7 @@ class Parser
             function ($matches) use ($self) {
                 $escaped = $self->escapeBracket($matches[1]);
                 $url = $self->escapeBracket($matches[2]);
+                $url = $self->cleanUrl($url);
                 return $self->makeHolder(
                     "<img src=\"{$url}\" alt=\"{$escaped}\" title=\"{$escaped}\">"
                 );
@@ -336,6 +338,7 @@ class Parser
                     $self->escapeBracket($matches[1]),  '',  false, false
                 );
                 $url = $self->escapeBracket($matches[2]);
+                $url = $self->cleanUrl($url);
                 return $self->makeHolder("<a href=\"{$url}\">{$escaped}</a>");
             },
             $text
@@ -376,12 +379,13 @@ class Parser
         );
 
         // autolink url
-        if ($enableAutoLink)
+        if ($enableAutoLink) {
             $text = preg_replace(
                 "/(^|[^\"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",
                 "\\1<a href=\"\\2\">\\2</a>\\4",
                 $text
             );
+        }
 
         $text = $this->call('afterParseInlineBeforeRelease', $text);
         $text = $this->releaseHolder($text, $clearHolders);
@@ -582,7 +586,7 @@ class Parser
 
                 // definition
                 case preg_match("/^\s*\[((?:[^\]]|\\]|\\[)+?)\]:\s*(.+)$/", $line, $matches):
-                    $this->_definitions[$matches[1]] = $matches[2];
+                    $this->_definitions[$matches[1]] = $this->cleanUrl($matches[2]);
                     $this->startBlock('definition', $key)
                         ->endBlock();
                     break;
@@ -1121,6 +1125,19 @@ class Parser
         }
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * @param $url
+     * @return string
+     */
+    public function cleanUrl($url)
+    {
+        if (preg_match("/^\s*((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)/i", $url, $matches)) {
+            return $matches[1];
+        } else {
+            return '#';
+        }
     }
 
     /**
