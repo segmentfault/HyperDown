@@ -960,10 +960,10 @@ class Parser
     private function parseTable(array $lines, array $value)
     {
         list ($ignores, $aligns) = $value;
-        $head = count($ignores) > 0;
+        $head = count($ignores) > 0 && array_sum($ignores) > 0;
 
         $html = '<table>';
-        $body = NULL;
+        $body = $head ? NULL : true;
         $output = false;
 
         foreach ($lines as $key => $line) {

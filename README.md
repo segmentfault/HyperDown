@@ -34,10 +34,6 @@ $html = $parser->makeHtml($text);
 - 脚标
 - 分隔符
 - 表格
-
-即将支持的语法
---------------
-
 - 图片和链接支持互相套用
 
 浏览器中使用请参阅 [HyperDown.js](https://github.com/SegmentFault/HyperDown.js)
