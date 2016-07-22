@@ -1140,6 +1140,8 @@ class Parser
     {
         if (preg_match("/^\s*((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)/i", $url, $matches)) {
             return $matches[1];
+        } else if (preg_match("/^\s*([x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&]+)/i", $url, $matches)) {
+            return $matches[1];
         } else {
             return '#';
         }
