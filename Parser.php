@@ -757,7 +757,11 @@ class Parser
     {
         $blocks = $this->call('beforeOptimizeBlocks', $blocks, $lines);
 
-        foreach ($blocks as $key => &$block) {
+        $key = 0;
+        while (isset($blocks[$key])) {
+            $moved = false;
+
+            $block = &$blocks[$key];
             $prevBlock = isset($blocks[$key - 1]) ? $blocks[$key - 1] : NULL;
             $nextBlock = isset($blocks[$key + 1]) ? $blocks[$key + 1] : NULL;
 
@@ -785,8 +789,15 @@ class Parser
                             $prevBlock[0],  $prevBlock[1],  $nextBlock[2],  NULL
                         );
                         array_splice($blocks, $key, 2);
+
+                        // do not move
+                        $moved = true;
                     }
                 }
+            }
+
+            if (!$moved) {
+                $key ++;
             }
         }
 
