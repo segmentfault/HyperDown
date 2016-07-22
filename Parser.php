@@ -259,9 +259,11 @@ class Parser
         $text = preg_replace_callback(
             "/<(https?:\/\/.+)>/i",
             function ($matches) use ($self) {
-                $matches[1] = $self->cleanUrl($matches[1]);
+                $url = $self->cleanUrl($matches[1]);
+                $link = $self->call('parseLink', $matches[1]);
+
                 return $self->makeHolder(
-                    "<a href=\"{$matches[1]}\">{$matches[1]}</a>"
+                    "<a href=\"{$url}\">{$link}</a>"
                 );
             },
             $text
@@ -380,9 +382,12 @@ class Parser
 
         // autolink url
         if ($enableAutoLink) {
-            $text = preg_replace(
-                "/(^|[^\"])((http|https|ftp|mailto):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",
-                "\\1<a href=\"\\2\">\\2</a>\\4",
+            $text = preg_replace_callback(
+                "/(^|[^\"])((https?):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",
+                function ($matches) use ($self) {
+                    $link = $self->call('parseLink', $matches[2]);
+                    return "{$matches[1]}<a href=\"{$matches[2]}\">{$link}</a>{$matches[4]}";
+                },
                 $text
             );
         }
