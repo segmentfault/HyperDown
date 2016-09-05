@@ -998,8 +998,8 @@ class Parser
 
             if ($line[0] == '|') {
                 $line = substr($line, 1);
-
-                if ($line[strlen($line) - 1] == '|') {
+				$len=strlen($line);
+                if ($len && $line[$len - 1] == '|') {
                     $line = substr($line, 0, -1);
                 }
             }
