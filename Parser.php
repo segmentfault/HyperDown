@@ -119,7 +119,7 @@ class Parser
      */
     public function makeHolder($str)
     {
-        $key = "|\r" . $this->_uniqid . $this->_id . "\r|";
+        $key = "\r" . $this->_uniqid . $this->_id . "\r";
         $this->_id ++;
         $this->_holders[$key] = $str;
 
@@ -246,6 +246,17 @@ class Parser
         $self = $this;
         $text = $this->call('beforeParseInline', $text);
 
+        // escape
+        $text = preg_replace_callback(
+            "/\\\(.)/u",
+            function ($matches) use ($self) {
+                $escaped = htmlspecialchars($matches[1]);
+                $escaped = str_replace('$', '&dollar;', $escaped);
+                return  $self->makeHolder($escaped);
+            },
+            $text
+        );
+
         // code
         $text = preg_replace_callback(
             "/(^|[^\\\])(`+)(.+?)\\2/",
@@ -361,18 +372,7 @@ class Parser
                 return $self->makeHolder($result);
             },
             $text
-        );
-
-        // escape
-        $text = preg_replace_callback(
-            "/\\\(.)/u",
-            function ($matches) use ($self) {
-                $escaped = htmlspecialchars($matches[1]);
-                $escaped = str_replace('$', '&dollar;', $escaped);
-                return  $self->makeHolder($escaped);
-            },
-            $text
-        );
+        ); 
 
         // strong and em and some fuck
         $text = $this->parseInlineCallback($text);
