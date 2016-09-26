@@ -220,7 +220,7 @@ class Parser
     private function releaseHolder($text, $clearHolders = true)
     {
         $deep = 0;
-        while (strpos($text, "|\r") !== false && $deep < 10) {
+        while (strpos($text, "\r") !== false && $deep < 10) {
             $text = str_replace(array_keys($this->_holders), array_values($this->_holders), $text);
             $deep ++;
         }
