@@ -365,7 +365,7 @@ class Parser
 
         // escape
         $text = preg_replace_callback(
-            "/\\\(x80-xff|.)/",
+            "/\\\(.)/u",
             function ($matches) use ($self) {
                 $escaped = htmlspecialchars($matches[1]);
                 $escaped = str_replace('$', '&dollar;', $escaped);
