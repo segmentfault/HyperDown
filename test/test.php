@@ -44,6 +44,12 @@ function test($title, $specs) {
 }
 
 test('HyperDown', [
+    'code' => [
+        "`code`" => [
+            "Hello `World`",
+            "<p>Hello <code>World</code></p>"
+        ]
+    ],
     'footnote'  =>  [
         '脚注' => [
             "Never write \"[click here][^2]\".\n [^2]: http://www.w3.org/QA/Tips/noClickHere",
