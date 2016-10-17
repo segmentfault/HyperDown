@@ -259,7 +259,7 @@ class Parser
 
         // code
         $text = preg_replace_callback(
-            "/(^|[^\\\])(`+)(.+?)\\2/",
+            "/(^|[^\\\\])(`+)(.+?)\\2/",
             function ($matches) use ($self) {
                 return  $matches[1] . $self->makeHolder(
                     '<code>' . htmlspecialchars($matches[3]) . '</code>'
