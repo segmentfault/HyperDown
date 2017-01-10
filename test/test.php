@@ -98,6 +98,12 @@ test('HyperDown', [
             "|---------------|-------|\n| Variable_name | Value |\n| ------------- | ----- |\n| sql_mode      | ONLY_FULL_GROUP_BY, STRICT_TRANS_TABLES, NO_ZERO_IN_DATE, NO_ZERO_DATE, ERROR_FOR_DIVISION_BY_ZERO, NO_AUTO_CREATE_USER, NO_ENGINE_SUBSTITUTION |\n|---------------|-------|",
             '<table><thead><tr><th>Variable_name</th><th>Value</th></tr></thead><tbody><tr><td>sql_mode</td><td>ONLY_FULL_GROUP_BY, STRICT_TRANS_TABLES, NO_ZERO_IN_DATE, NO_ZERO_DATE, ERROR_FOR_DIVISION_BY_ZERO, NO_AUTO_CREATE_USER, NO_ENGINE_SUBSTITUTION</td></tr></tbody></table>'
         ]
+    ],
+    'url'=>[
+        'exclamatory'=>[ // 感叹号
+            'http://sqlfiddle.com/#!9/ca126b/1',
+            '<p><a href="http://sqlfiddle.com/#!9/ca126b/1">http://sqlfiddle.com/#!9/ca126b/1</a></p>'
+        ]
     ]
 ]);
 

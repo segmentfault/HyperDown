@@ -385,7 +385,7 @@ class Parser
         // autolink url
         if ($enableAutoLink) {
             $text = preg_replace_callback(
-                "/(^|[^\"])((https?):[x80-xff_a-z0-9-\.\/%#@\?\+=~\|\,&\(\)]+)($|[^\"])/i",
+                "/(^|[^\"])((https?):[x80-xff_a-z0-9-\.\/%#!@\?\+=~\|\,&\(\)]+)($|[^\"])/i",
                 function ($matches) use ($self) {
                     $link = $self->call('parseLink', $matches[2]);
                     return "{$matches[1]}<a href=\"{$matches[2]}\">{$link}</a>{$matches[4]}";
