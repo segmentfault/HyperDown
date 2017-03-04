@@ -321,7 +321,7 @@ class Parser
         $text = preg_replace_callback(
             "/!\[((?:[^\]]|\\\\\]|\\\\\[)*?)\]\(((?:[^\)]|\\\\\)|\\\\\()+?)\)/",
             function ($matches) use ($self) {
-                $escaped = $self->escapeBracket($matches[1]);
+                $escaped = htmlspecialchars($self->escapeBracket($matches[1]));
                 $url = $self->escapeBracket($matches[2]);
                 $url = $self->cleanUrl($url);
                 return $self->makeHolder(
@@ -334,7 +334,7 @@ class Parser
         $text = preg_replace_callback(
             "/!\[((?:[^\]]|\\\\\]|\\\\\[)*?)\]\[((?:[^\]]|\\\\\]|\\\\\[)+?)\]/",
             function ($matches) use ($self) {
-                $escaped = $self->escapeBracket($matches[1]);
+                $escaped = htmlspecialchars($self->escapeBracket($matches[1]));
 
                 $result = isset( $self->_definitions[$matches[2]] ) ?
                     "<img src=\"{$self->_definitions[$matches[2]]}\" alt=\"{$escaped}\" title=\"{$escaped}\">"
