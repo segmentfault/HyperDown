@@ -84,6 +84,11 @@ class Parser
     private $_id;
 
     /**
+     * @var bool
+     */
+    private $_html = false;
+
+    /**
      * makeHtml
      *
      * @param mixed $text
@@ -102,6 +107,14 @@ class Parser
         $html = $this->makeFootnotes($html);
 
         return $this->call('makeHtml', $html);
+    }
+
+    /**
+     * @param $html
+     */
+    public function enableHtml($html = true)
+    {
+        $this->_html = $html;
     }
 
     /**
@@ -536,6 +549,22 @@ class Parser
                 continue;
             }
 
+            // super html mode
+            if ($this->_html) {
+                if (preg_match("/^(\s*)!!!(\s*)$/i", $line, $matches)) {
+                    if ($this->isBlock('shtml')) {
+                        $this->setBlock($key)->endBlock();
+                    } else {
+                        $this->startBlock('shtml', $key);
+                    }
+
+                    continue;
+                } else if ($this->isBlock('shtml')) {
+                    $this->setBlock($key);
+                    continue;
+                }
+            }
+
             // html block is special too
             if (preg_match("/^\s*<({$special})(\s+[^>]*)?>/i", $line, $matches)) {
                 $tag = strtolower($matches[1]);
@@ -819,7 +848,7 @@ class Parser
         $lang = trim($lang);
         $count = strlen($blank);
 
-        if (! preg_match("/^[_a-z0-9-\+\#\:\.]+$/i", $lang)) {
+        if (!preg_match("/^[_a-z0-9-\+\#\:\.]+$/i", $lang)) {
             $lang = NULL;
         } else {
             $parts = explode(':', $lang);
@@ -855,6 +884,17 @@ class Parser
         $str = implode("\n", $lines);
 
         return preg_match("/^\s*$/", $str) ? '' : '<pre><code>' . $str . '</code></pre>';
+    }
+
+    /**
+     * parseShtml
+     *
+     * @param array $lines
+     * @return string
+     */
+    private function parseShtml(array $lines)
+    {
+        return trim(implode("\n", array_slice($lines, 1, -1)));
     }
 
     /**
