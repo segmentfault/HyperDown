@@ -36,6 +36,11 @@ class Parser
     public $_footnotes;
 
     /**
+     * @var bool
+     */
+    public $_html = false;
+
+    /**
      * _blocks
      *
      * @var array
@@ -82,11 +87,6 @@ class Parser
      * @var int
      */
     private $_id;
-
-    /**
-     * @var bool
-     */
-    private $_html = false;
 
     /**
      * makeHtml
@@ -317,7 +317,7 @@ class Parser
         $text = preg_replace_callback(
             "/<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/i",
             function ($matches) use ($self, $whiteList) {
-                if (false !== stripos(
+                if ($self->_html || false !== stripos(
                     '|' . $self->_commonWhiteList . '|' . $whiteList . '|', '|' . $matches[2] . '|'
                 )) {
                     return $self->makeHolder($matches[0]);
