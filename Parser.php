@@ -597,6 +597,33 @@ class Parser
                 continue;
             }
 
+            // pre block
+            if (preg_match("/^ {4}/", $line)) {
+                $emptyCount = 0;
+
+                if ($this->isBlock('pre') || $this->isBlock('list')) {
+                    $this->setBlock($key);
+                } else if ($this->isBlock('normal')) {
+                    $this->startBlock('pre', $key);
+                }
+
+                continue;
+            } else if ($this->isBlock('pre')) {
+                if (preg_match("/^\s*$/", $line)) {
+                    if ($emptyCount > 0) {
+                        $this->startBlock('normal', $key);
+                    } else {
+                        $this->setBlock($key);
+                    }
+
+                    $emptyCount ++;
+                } else {
+                    $this->startBlock('normal', $key);
+                }
+                
+                continue;
+            }
+
             // html block is special too
             if (preg_match("/^\s*<({$special})(\s+[^>]*)?>/i", $line, $matches)) {
                 $tag = strtolower($matches[1]);
@@ -620,17 +647,6 @@ class Parser
             }
 
             switch (true) {
-                // pre block
-                case preg_match("/^ {4}/", $line):
-                    $emptyCount = 0;
-
-                    if ($this->isBlock('pre') || $this->isBlock('list')) {
-                        $this->setBlock($key);
-                    } else if ($this->isBlock('normal')) {
-                        $this->startBlock('pre', $key);
-                    }
-                    break;
-
                 // list
                 case preg_match("/^(\s*)((?:[0-9a-z]+\.)|\-|\+|\*)\s+/", $line, $matches):
                     $space = strlen($matches[1]);
@@ -768,18 +784,6 @@ class Parser
                         if (false !== strpos($line, '|')) {
                             $block[3][2] ++;
                             $this->setBlock($key, $block[3]);
-                        } else {
-                            $this->startBlock('normal', $key);
-                        }
-                    } else if ($this->isBlock('pre')) {
-                        if (preg_match("/^\s*$/", $line)) {
-                            if ($emptyCount > 0) {
-                                $this->startBlock('normal', $key);
-                            } else {
-                                $this->setBlock($key);
-                            }
-
-                            $emptyCount ++;
                         } else {
                             $this->startBlock('normal', $key);
                         }
