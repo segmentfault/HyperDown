@@ -19,6 +19,13 @@ class Parser
     public $_commonWhiteList = 'kbd|b|i|strong|em|sup|sub|br|code|del|a|hr|small';
 
     /**
+     * html tags
+     *
+     * @var string
+     */
+    public $_blockHtmlTags = 'p|div|h[1-6]|blockquote|pre|table|dl|ol|ul|address|form|fieldset|iframe|hr|legend|article|section|nav|aside|hgroup|header|footer|figcaption|svg|script|noscript';
+
+    /**
      * _specialWhiteList
      *
      * @var mixed
@@ -584,17 +591,19 @@ class Parser
                 }
 
                 // auto html
-                if (preg_match("/^\s*<([a-z0-9-]+)(\s+[^>]*)?>/i", $line, $matches)) {
+                if (preg_match("/^\s*<({$this->_blockHtmlTags})(\s+[^>]*)?>/i", $line, $matches)) {
                     if ($this->isBlock('ahtml')) {
                         $this->setBlock($key);
                         continue;
-                    } else if ((empty($matches[2]) || $matches[2] != '/') && !preg_match("/^(area|base|br|col|embed|hr|img|input|keygen|link|meta|param|source|track|wbr)$/i", $matches[1])) {
+                    } else if (empty($matches[2]) || $matches[2] != '/') {
                         $this->startBlock('ahtml', $key);
+                        preg_match_all("/<({$this->_blockHtmlTags})(\s+[^>]*)?>/i", $line, $allMatches);
+                        $lastMatch = $allMatches[1][count($allMatches[0]) - 1];
 
-                        if (strpos($line, "</{$matches[1]}>") !== false) {
+                        if (strpos($line, "</{$lastMatch}>") !== false) {
                             $this->endBlock();
                         } else {
-                            $autoHtml = $matches[1];
+                            $autoHtml = $lastMatch;
                         }
                         continue;
                     } 
