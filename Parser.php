@@ -721,7 +721,7 @@ class Parser
                     break;
 
                 // table
-                case preg_match("/^((?:(?:(?:[ :]*\-[ :]*)+(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-[ :]*)+(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-[ :]*)+))+)$/", $line, $matches):
+                case preg_match("/^((?:(?:(?:\||\+)(?:[ :]*\-+[ :]*)(?:\||\+))|(?:(?:[ :]*\-+[ :]*)(?:\||\+)(?:[ :]*\-+[ :]*))|(?:(?:[ :]*\-+[ :]*)(?:\||\+))|(?:(?:\||\+)(?:[ :]*\-+[ :]*)))+)$/", $line, $matches):
                     if ($this->isBlock('table')) {
                         $block[3][0][] = $block[3][2];
                         $block[3][2] ++;
@@ -1050,6 +1050,11 @@ class Parser
                 $space = strlen($matches[1]);
                 $type = false !== strpos('+-*', $matches[2]) ? 'ul' : 'ol';
                 $minSpace = min($space, $minSpace);
+
+                if ($space > 0) {
+                    $secondMinSpace = min($space, $secondMinSpace);
+                    $found = true;
+                }
 
                 $rows[] = array($space, $type, $line, $matches[4]);
             } else {
