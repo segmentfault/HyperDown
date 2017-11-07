@@ -542,7 +542,29 @@ class Parser
         foreach ($lines as $key => $line) {
             $block = $this->getBlock();
 
-            // code block is special
+            // list block
+            if (preg_match("/^(\s*)((?:[0-9a-z]+\.)|\-|\+|\*)\s+/i", $line, $matches)) {
+                $space = strlen($matches[1]);
+                $emptyCount = 0;
+
+                // opened
+                if ($this->isBlock('list')) {
+                    $this->setBlock($key, $space);
+                } else {
+                    $this->startBlock('list', $key, $space);
+                }
+
+                continue;
+            } else if ($this->isBlock('list')) {
+                if ($emptyCount == 0 
+                    && preg_match("/^(\s+)/", $line, $matches)
+                    && strlen($matches[1]) > $block[2]) {
+                    $this->setBlock($key);
+                    continue;
+                }
+            }
+
+            // code block
             if (preg_match("/^(\s*)(~{3,}|`{3,})([^`~]*)$/i", $line, $matches)) {
                 if ($this->isBlock('code')) {
                     $isAfterList = $block[3][2];
@@ -681,19 +703,6 @@ class Parser
             }
 
             switch (true) {
-                // list
-                case preg_match("/^(\s*)((?:[0-9a-z]+\.)|\-|\+|\*)\s+/", $line, $matches):
-                    $space = strlen($matches[1]);
-                    $emptyCount = 0;
-
-                    // opened
-                    if ($this->isBlock('list')) {
-                        $this->setBlock($key, $space);
-                    } else {
-                        $this->startBlock('list', $key, $space);
-                    }
-                    break; 
-
                 // footnote
                 case preg_match("/^\[\^((?:[^\]]|\\]|\\[)+?)\]:/", $line, $matches):
                     $space = strlen($matches[0]) - 1;
@@ -1040,9 +1049,12 @@ class Parser
     {
         $html = '';
         $minSpace = 99999;
-        $secondMinSpace = 99999;
         $found = false;
+        $secondMinSpace = 99999;
+        $secondFound = false;
         $rows = array();
+
+        print_r($lines);
 
         // count levels
         foreach ($lines as $key => $line) {
@@ -1050,10 +1062,11 @@ class Parser
                 $space = strlen($matches[1]);
                 $type = false !== strpos('+-*', $matches[2]) ? 'ul' : 'ol';
                 $minSpace = min($space, $minSpace);
+                $found = true;
 
                 if ($space > 0) {
                     $secondMinSpace = min($space, $secondMinSpace);
-                    $found = true;
+                    $secondFound = true;
                 }
 
                 $rows[] = array($space, $type, $line, $matches[4]);
@@ -1065,13 +1078,14 @@ class Parser
                     
                     if ($space > 0) {
                         $secondMinSpace = min($space, $secondMinSpace);
-                        $found = true;
+                        $secondFound = true;
                     }
                 }
             }
         }
 
-        $secondMinSpace = $found ? $secondMinSpace : $minSpace;
+        $minSpace = $found ? $minSpace : 0;
+        $secondMinSpace = $secondFound ? $secondMinSpace : $minSpace;
 
         $lastType = '';
         $leftLines = array();
@@ -1104,7 +1118,7 @@ class Parser
         }
 
         if (!empty($leftLines)) {
-            $html .= "<li>" . $this->parse(implode("\n", $leftLines), true) . "</li></{$lastType}>";
+            // $html .= "<li>" . $this->parse(implode("\n", $leftLines), true) . "</li></{$lastType}>";
         }
 
         return $html;
