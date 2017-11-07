@@ -335,6 +335,12 @@ class Parser
             $text
         );
 
+        if ($this->_html) {
+            $text = preg_replace_callback("/<!\-\-(.*?)\-\->/", function ($matches) use ($self) {
+                return $self->makeHolder($matches[0]);
+            }, $text);
+        }
+
         $text = str_replace(array('<', '>'),  array('&lt;', '&gt;'),  $text);
 
         // footnote
@@ -543,7 +549,7 @@ class Parser
             $block = $this->getBlock();
 
             // list block
-            if (preg_match("/^(\s*)((?:[0-9a-z]+\.)|\-|\+|\*)\s+/i", $line, $matches)) {
+            if (preg_match("/^(\s*)((?:[0-9]+\.)|(?:[a-z]\.?)|\-|\+|\*)\s+/i", $line, $matches)) {
                 $space = strlen($matches[1]);
                 $emptyCount = 0;
 
@@ -556,9 +562,9 @@ class Parser
 
                 continue;
             } else if ($this->isBlock('list')) {
-                if ($emptyCount == 0 
+                if ($emptyCount == 0
                     && preg_match("/^(\s+)/", $line, $matches)
-                    && strlen($matches[1]) > $block[2]) {
+                    && strlen($matches[1]) > $block[3]) {
                     $this->setBlock($key);
                     continue;
                 }
@@ -635,6 +641,9 @@ class Parser
                     continue;
                 } else if ($this->isBlock('ahtml')) {
                     $this->setBlock($key);
+                    continue;
+                } else if (preg_match("/^\s*<!\-\-(.*?)\-\->\s*$/", $line, $matches)) {
+                    $this->startBlock('ahtml', $key)->endBlock();
                     continue;
                 }
             }
@@ -1049,16 +1058,14 @@ class Parser
     {
         $html = '';
         $minSpace = 99999;
-        $found = false;
         $secondMinSpace = 99999;
+        $found = false;
         $secondFound = false;
         $rows = array();
 
-        print_r($lines);
-
         // count levels
         foreach ($lines as $key => $line) {
-            if (preg_match("/^(\s*)((?:[0-9a-z]+\.?)|\-|\+|\*)(\s+)(.*)$/", $line, $matches)) {
+            if (preg_match("/^(\s*)((?:[0-9]+\.?)|(?:[a-z]\.?)|\-|\+|\*)(\s+)(.*)$/i", $line, $matches)) {
                 $space = strlen($matches[1]);
                 $type = false !== strpos('+-*', $matches[2]) ? 'ul' : 'ol';
                 $minSpace = min($space, $minSpace);
@@ -1118,7 +1125,7 @@ class Parser
         }
 
         if (!empty($leftLines)) {
-            // $html .= "<li>" . $this->parse(implode("\n", $leftLines), true) . "</li></{$lastType}>";
+            $html .= "<li>" . $this->parse(implode("\n", $leftLines), true) . "</li></{$lastType}>";
         }
 
         return $html;
