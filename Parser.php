@@ -635,10 +635,16 @@ class Parser
             }
 
             return false;
-        } else if ($this->isBlock('list')) {
-            if ($state['empty'] == 0
+        } else if ($this->isBlock('list') && !preg_match("/^\s*\[((?:[^\]]|\\]|\\[)+?)\]:\s*(.+)$/", $line)) {
+            if ($state['empty'] <= 1
                 && preg_match("/^(\s+)/", $line, $matches)
                 && strlen($matches[1]) > $block[3]) {
+
+                $state['empty'] = 0;
+                $this->setBlock($key);
+                return false;
+            } else if (preg_match("/^(\s*)$/", $line) && $state['empty'] == 0) {
+                $state['empty'] ++;
                 $this->setBlock($key);
                 return false;
             }
@@ -793,8 +799,6 @@ class Parser
     private function parseBlockPre($block, $key, $line, &$state)
     {
         if (preg_match("/^ {4}/", $line)) {
-            $state['empty'] = 0;
-
             if ($this->isBlock('pre')) {
                 $this->setBlock($key);
             } else {
@@ -802,19 +806,8 @@ class Parser
             }
 
             return false;
-        } else if ($this->isBlock('pre')) {
-            if (preg_match("/^\s*$/", $line)) {
-                if ($state['empty'] > 0) {
-                    $this->startBlock('normal', $key);
-                } else {
-                    $this->setBlock($key);
-                }
-
-                $state['empty'] ++;
-            } else {
-                $this->startBlock('normal', $key);
-            }
-
+        } else if ($this->isBlock('pre') && preg_match("/^\s*$/", $line)) {
+            $this->setBlock($key);
             return false;
         }
 
@@ -1050,27 +1043,7 @@ class Parser
      */
     private function parseBlockDefault($block, $key, $line, &$state)
     {
-        if ($this->isBlock('list')) {
-            if (preg_match("/^(\s*)/", $line, $matches)) { // empty line
-                $indent = strlen($matches[1]) > 0;
-
-                if ($state['empty'] > 0 && !$indent) {
-                    $this->startBlock('normal', $key);
-                } else {
-                    $this->setBlock($key);
-                }
-
-                if ($indent) {
-                    $state['empty'] = 0;
-                } else {
-                    $state['empty'] ++;
-                }
-            } else if ($state['empty'] == 0) {
-                $this->setBlock($key);
-            } else {
-                $this->startBlock('normal', $key);
-            }
-        } else if ($this->isBlock('footnote')) {
+        if ($this->isBlock('footnote')) {
             preg_match("/^(\s*)/", $line, $matches);
             if (strlen($matches[1]) >= $block[3][0]) {
                 $this->setBlock($key);
