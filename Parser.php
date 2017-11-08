@@ -51,10 +51,10 @@ class Parser
      * @var array
      */
     public $blockParsers = array(
-        array('list', 10),
-        array('code', 20),
-        array('shtml', 30),
-        array('ahtml', 40),
+        array('code', 10),
+        array('shtml', 20),
+        array('ahtml', 30),
+        array('list', 40),
         array('math', 50),
         array('pre', 60),
         array('html', 70),
@@ -700,7 +700,7 @@ class Parser
     private function parseBlockShtml($block, $key, $line, &$state)
     {
         if ($this->_html) {
-            if (!$state['html'] && preg_match("/^(\s*)!!!(\s*)$/", $line, $matches)) {
+            if (preg_match("/^(\s*)!!!(\s*)$/", $line, $matches)) {
                 if ($this->isBlock('shtml')) {
                     $this->setBlock($key)->endBlock();
                 } else {
@@ -795,7 +795,7 @@ class Parser
         if (preg_match("/^ {4}/", $line)) {
             $state['empty'] = 0;
 
-            if ($this->isBlock('pre') || $this->isBlock('list')) {
+            if ($this->isBlock('pre')) {
                 $this->setBlock($key);
             } else {
                 $this->startBlock('pre', $key);
