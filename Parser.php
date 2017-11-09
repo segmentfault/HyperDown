@@ -248,12 +248,6 @@ class Parser
             $html .= $result;
         }
 
-        // inline mode for single normal block
-        if ($inline && count($blocks) == 1 && $blocks[0][0] == 'normal') {
-            // remove p tag
-            $html = preg_replace("/^\s*<p>(.*)<\/p>\s*$/", "\\1", $html);
-        }
-
         return $html;
     }
 
