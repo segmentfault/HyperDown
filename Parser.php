@@ -622,7 +622,7 @@ class Parser
      */
     private function parseBlockList($block, $key, $line, &$state)
     {
-        if (preg_match("/^(\s*)((?:[0-9]+\.)|(?:[a-z]\.?)|\-|\+|\*)\s+/i", $line, $matches)) {
+        if (preg_match("/^(\s*)((?:[0-9]+\.)|(?:[a-z]\.)|\-|\+|\*)\s+/i", $line, $matches)) {
             $space = strlen($matches[1]);
             $state['empty'] = 0;
 
