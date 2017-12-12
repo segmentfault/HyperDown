@@ -157,6 +157,7 @@ class Parser
         $text = $this->initText($text);
         $html = $this->parse($text);
         $html = $this->makeFootnotes($html);
+        $html = $this->optimizeLines($html);
 
         return $this->call('makeHtml', $html);
     }
@@ -288,6 +289,60 @@ class Parser
         }
 
         return $text;
+    }
+
+    /**
+     * @param $start
+     * @param int $end
+     * @return string
+     */
+    public function markLine($start, $end = -1)
+    {
+        if ($this->_line) {
+            $end = $end < 0 ? $start : $end;
+            return '<span class="line" data-start="' . $start
+                . '" data-end="' . $end . '" data-id="' . $this->_uniqid . '" />';
+        }
+
+        return '';
+    }
+
+    /**
+     * @param array $lines
+     * @param $start
+     * @return string
+     */
+    public function markLines(array $lines, $start)
+    {
+        $i = -1;
+        $self = $this;
+
+        return $this->_line ? array_map(function ($line) use ($self, $start, &$i) {
+            $i ++;
+            return $self->markLine($start + $i) . $line;
+        }, $lines) : $lines;
+    }
+
+    /**
+     * @param $html
+     * @return string
+     */
+    public function optimizeLines($html)
+    {
+        $last = 0;
+
+        return $this->_line ?
+            preg_replace_callback("/class=\"line\" data\-start=\"([0-9]+)\" data\-end=\"([0-9]+)\" (data\-id=\"{$this->_uniqid}\")/",
+                function ($matches) use (&$last) {
+                    if ($matches[1] != $last) {
+                        $replace = 'class="line" data-start="' . $last . '" data-end="' . $matches[2] . '" ' . $matches[3];
+                    } else {
+                        $replace = $matches[0];
+                    }
+
+                    $last = $matches[2] + 1;
+                    return $replace;
+                }, $html) : $html;
     }
 
     /**
@@ -497,38 +552,6 @@ class Parser
         $text = $this->call('afterParseInline', $text);
 
         return $text;
-    }
-
-    /**
-     * @param $start
-     * @param int $end
-     * @return string
-     */
-    public function markLine($start, $end = -1)
-    {
-        if ($this->_line) {
-            $end = $end < 0 ? $start : $end;
-            return '<span class="line" data-start="' . $start . '" data-end="' . $end . '" />';
-        }
-
-        return '';
-    }
-
-    /**
-     * @param array $lines
-     * @param $start
-     * @return string
-     */
-    public function markLines(array $lines, $start)
-    {
-        $i = -1;
-        $self = $this;
-
-        return array_map(function ($line) use ($self, $start, &$i) {
-            $i ++;
-            $start = $start + $i;
-            return $self->markLine($start) . $line;
-        }, $lines);
     }
 
     /**
@@ -1181,10 +1204,9 @@ class Parser
      * @param array $lines
      * @param array $parts
      * @param int $start
-     * @param int $end
      * @return string
      */
-    private function parseCode(array $lines, array $parts, $start, $end)
+    private function parseCode(array $lines, array $parts, $start)
     {
         list ($blank, $lang) = $parts;
         $lang = trim($lang);
@@ -1201,15 +1223,22 @@ class Parser
             }
         }
 
-        $lines = array_map(function ($line) use ($count) {
-            return preg_replace("/^[ ]{{$count}}/", '', $line);
+        $isEmpty = true;
+
+        $lines = array_map(function ($line) use ($count, &$isEmpty) {
+            $line = preg_replace("/^[ ]{{$count}}/", '', $line);
+            if ($isEmpty && !preg_match("/^\s*$/", $line)) {
+                $isEmpty = false;
+            }
+
+            return htmlspecialchars($line);
         }, array_slice($lines, 1, -1));
         $str = implode("\n", $this->markLines($lines, $start + 1));
 
-        return preg_match("/^\s*$/", $str) ? '' :
+        return $isEmpty ? '' :
             '<pre><code' . (!empty($lang) ? " class=\"{$lang}\"" : '')
             . (!empty($rel) ? " rel=\"{$rel}\"" : '') . '>'
-            . htmlspecialchars($str) . '</code></pre>';
+            . $str . '</code></pre>';
     }
 
     /**
@@ -1249,10 +1278,9 @@ class Parser
      * @param array $lines
      * @param mixed $value
      * @param int $start
-     * @param int $end
      * @return string
      */
-    private function parseShtml(array $lines, $value, $start, $end)
+    private function parseShtml(array $lines, $value, $start)
     {
         return trim(implode("\n", $this->markLines(array_slice($lines, 1, -1), $start + 1)));
     }
@@ -1427,7 +1455,6 @@ class Parser
                     $body = true;
                 }
 
-                $html .= $this->markLine($start + $key);
                 continue;
             }
 
@@ -1472,7 +1499,9 @@ class Parser
                 $html .= '<tbody>';
             }
 
-            $html .= '<tr>'. $this->markLine($start + $key);
+            $html .= '<tr' . ($this->_line ? ' class="line" data-start="'
+                    . ($start + $key) . '" data-end="' . ($start + $key)
+                    . '" data-id="' . $this->_uniqid . '"' : '') . '>';
 
             foreach ($columns as $key => $column) {
                 list ($num, $text) = $column;
@@ -1585,16 +1614,17 @@ class Parser
      *
      * @param array $lines
      * @param string $type
+     * @param int $start
      * @return string
      */
-    private function parseHtml(array $lines, $type)
+    private function parseHtml(array $lines, $type, $start)
     {
         foreach ($lines as &$line) {
             $line = $this->parseInline($line,
                 isset($this->_specialWhiteList[$type]) ? $this->_specialWhiteList[$type] : '');
         }
 
-        return implode("\n", $lines);
+        return implode("\n", $this->markLines($lines, $start));
     }
 
     /**
