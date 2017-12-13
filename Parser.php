@@ -1559,16 +1559,11 @@ class Parser
      */
     private function parseNormal(array $lines, $inline = false, $start)
     {
-        $from = $start;
-
         foreach ($lines as $key => &$line) {
             $line = $this->parseInline($line);
 
             if (!preg_match("/^\s*$/", $line)) {
-                $end = $start + $key;
-                $line = $this->markLine($from, $end) . $line;
-
-                $from = $end + 1;
+                $line = $this->markLine($start + $key) . $line;
             }
         }
 
