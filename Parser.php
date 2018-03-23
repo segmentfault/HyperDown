@@ -1163,8 +1163,8 @@ class Parser
 
             if ('pre' == $type) {
                 $isEmpty = array_reduce(
-                    array_slice($lines, $block[1], $block[2] - $block[1] + 1)
-                    , function ($result, $line) {
+                    array_slice($lines, $block[1], $block[2] - $block[1] + 1),
+                    function ($result, $line) {
                         return preg_match("/^\s*$/", $line) && $result;
                     },
                     true
