@@ -1092,7 +1092,7 @@ class Parser
      */
     private function parseBlockHr($block, $key, $line)
     {
-        if (preg_match("/^[-\*]{3,}\s*$/", $line)) {
+        if (preg_match("/^((- *){3,}|(\* *){3,})\s*$/", $line)) {
             $this->startBlock('hr', $key)
                 ->endBlock();
 
