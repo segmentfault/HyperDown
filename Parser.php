@@ -438,7 +438,7 @@ class Parser
                 )) {
                     return $self->makeHolder($matches[0]);
                 } else {
-                    return htmlspecialchars($matches[0]);
+                    return $self->makeHolder(htmlspecialchars($matches[0]));
                 }
             },
             $text
