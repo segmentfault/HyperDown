@@ -382,6 +382,15 @@ class Parser
         $self = $this;
         $text = $this->call('beforeParseInline', $text); 
 
+        $text = preg_replace_callback("/\\\+/",function($matches) {
+            $str = $matches[0];
+            if(mb_strlen($str) % 2>0) {
+                return $str . '\\';
+            } else {
+                return $str;
+            }
+        },$text);
+        
         // code
         $text = preg_replace_callback(
             "/(^|[^\\\])(`+)(.+?)\\2/",
