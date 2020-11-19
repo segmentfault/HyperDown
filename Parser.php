@@ -701,19 +701,7 @@ class Parser
      */
     private function parseBlockList($block, $key, $line, &$state)
     {
-        if (preg_match("/^(\s*)((?:[0-9]+\.)|\-|\+|\*)\s+/i", $line, $matches)) {
-            $space = strlen($matches[1]);
-            $state['empty'] = 0;
-
-            // opened
-            if ($this->isBlock('list')) {
-                $this->setBlock($key, $space);
-            } else {
-                $this->startBlock('list', $key, $space);
-            }
-
-            return false;
-        } else if ($this->isBlock('list') && !preg_match("/^\s*\[((?:[^\]]|\\]|\\[)+?)\]:\s*(.+)$/", $line)) {
+        if ($this->isBlock('list') && !preg_match("/^\s*\[((?:[^\]]|\\]|\\[)+?)\]:\s*(.+)$/", $line)) {
             if ($state['empty'] <= 1
                 && preg_match("/^(\s+)/", $line, $matches)
                 && strlen($matches[1]) > $block[3]) {
@@ -726,6 +714,20 @@ class Parser
                 $this->setBlock($key);
                 return false;
             }
+        }
+
+        if (preg_match("/^(\s*)((?:[0-9]+\.)|\-|\+|\*)\s+/i", $line, $matches)) {
+            $space = strlen($matches[1]);
+            $state['empty'] = 0;
+
+            // opened
+            if ($this->isBlock('list')) {
+                $this->setBlock($key, $space);
+            } else {
+                $this->startBlock('list', $key, $space);
+            }
+
+            return false;
         }
 
         return true;
