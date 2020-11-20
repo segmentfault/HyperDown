@@ -35,7 +35,7 @@ function test($title, $specs) {
     foreach ($errors as $k => $error) {
         list ($key, $markdown, $html) = $error;
 
-        echo '  ' . $k + 1 . ') ' . $title . " {$key}:\n";
+        echo '  ' . ($k + 1) . ') ' . $title . " {$key}:\n";
         echo '    ' . $html;
         echo "\n    ==============\n";
         echo '    ' . $markdown;
@@ -81,17 +81,17 @@ test('HyperDown', [
     'list'  =>  [
         'ul'    => [
             "\n\n - list",
-            '<ul><li><p>list</p></li></ul>'
+            '<ul><li>list</li></ul>'
         ],
         'ol'    => [
             '1. list',
-            '<ol><li><p>list</p></li></ol>'
+            '<ol><li>list</li></ol>'
         ]
     ],
     'bugfix' => [
         'escape' => [
             "\\[系统盘]:\\\\Documents and Settings\\\\[用户名]\\\\Cookies",
-            "<p>[系统盘]:\\Documents and Settings\\[用户名]\\Cookies</p>"
+            "<p>\[系统盘]:\\Documents and Settings\\[用户名]\\Cookies</p>"
         ],
 
         'table'  => [
