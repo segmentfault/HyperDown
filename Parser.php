@@ -267,7 +267,7 @@ class Parser
             $result = $this->call('after' . ucfirst($method), $result, $value);
 
             $html .= $result;
-        } 
+        }
 
         return $html;
     }
@@ -380,17 +380,27 @@ class Parser
     public function parseInline($text, $whiteList = '', $clearHolders = true, $enableAutoLink = true)
     {
         $self = $this;
-        $text = $this->call('beforeParseInline', $text); 
+        $text = $this->call('beforeParseInline', $text);
 
-        $text = preg_replace_callback("/\\\+/",function($matches) {
-            $str = $matches[0];
-            if(mb_strlen($str) % 2>0) {
-                return $str . '\\';
-            } else {
-                return $str;
-            }
-        },$text);
-        
+        // 处理``之外的\字符
+        preg_match_all('/`.+?`/', $text, $matches);
+        $delimiters = $matches[0];
+        $lineTextArray = preg_split('/`.+?`/', $text);
+        $lineTextArray = array_map(function ($str) {
+            return preg_replace_callback("/\\\+/", function ($matches) {
+                $str = $matches[0];
+                if (mb_strlen($str) % 2 > 0) {
+                    return $str . '\\';
+                } else {
+                    return $str;
+                }
+            }, $str);
+        }, $lineTextArray);
+        $text = '';
+        do {
+            $text .= array_shift($lineTextArray) . array_shift($delimiters);
+        } while ($lineTextArray);
+
         // code
         $text = preg_replace_callback(
             "/(^|[^\\\])(`+)(.+?)\\2/",
@@ -534,7 +544,7 @@ class Parser
                 return $self->makeHolder($result);
             },
             $text
-        ); 
+        );
 
         // strong and em and some fuck
         $text = $this->parseInlineCallback($text);
@@ -1416,7 +1426,7 @@ class Parser
 
                 if (preg_match("/^(\s*)/", $line, $matches)) {
                     $space = strlen($matches[1]);
-                    
+
                     if ($space > 0) {
                         $secondMinSpace = min($space, $secondMinSpace);
                         $secondFound = true;
