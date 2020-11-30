@@ -90,8 +90,8 @@ test('HyperDown', [
     ],
     'bugfix' => [
         'escape' => [
-            "\\[系统盘]:\\\\Documents and Settings\\\\[用户名]\\\\Cookies",
-            "<p>\[系统盘]:\\Documents and Settings\\[用户名]\\Cookies</p>"
+            "\\[系统盘]:\\Documents and Settings\\\\[用户名]\\\\Cookies$\\lambda$",
+            "<p>[系统盘]:\\Documents and Settings\\[用户名]\\Cookies$\\lambda$</p>"
         ],
 
         'table'  => [
