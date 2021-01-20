@@ -2,7 +2,7 @@
     "name": "joyqi/hyper-down",
     "description": "A light weight markdown parser library",
     "keywords": ["markdown", "hyperdown", "segmentfault"],
-    "license": "BSD",
+    "license": "BSD-4-Clause",
     "authors": [
         {
             "name": "joyqi",
