@@ -382,25 +382,6 @@ class Parser
         $self = $this;
         $text = $this->call('beforeParseInline', $text);
 
-        // 处理``之外的\字符
-        preg_match_all('/`.+?`/', $text, $matches);
-        $delimiters = $matches[0];
-        $lineTextArray = preg_split('/`.+?`/', $text);
-        $lineTextArray = array_map(function ($str) {
-            return preg_replace_callback("/\\\+/", function ($matches) {
-                $str = $matches[0];
-                if (mb_strlen($str) % 2 > 0) {
-                    return $str . '\\';
-                } else {
-                    return $str;
-                }
-            }, $str);
-        }, $lineTextArray);
-        $text = '';
-        do {
-            $text .= array_shift($lineTextArray) . array_shift($delimiters);
-        } while ($lineTextArray);
-
         // code
         $text = preg_replace_callback(
             "/(^|[^\\\])(`+)(.+?)\\2/",
@@ -427,9 +408,10 @@ class Parser
         $text = preg_replace_callback(
             "/\\\(.)/u",
             function ($matches) use ($self) {
+                $prefix = preg_match("/^[-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]$/", $matches[1]) ? '' : '\\';
                 $escaped = htmlspecialchars($matches[1]);
                 $escaped = str_replace('$', '&dollar;', $escaped);
-                return  $self->makeHolder($escaped);
+                return  $self->makeHolder($prefix . $escaped);
             },
             $text
         );
@@ -1672,7 +1654,7 @@ class Parser
      */
     public function cleanUrl($url)
     {
-        if (preg_match("/^\s*((http|https|ftp|mailto):[\p{L}_a-z0-9-:\.\*\/%#;!@\?\+=~\|\,&\(\)]+)/iu", $url, $matches)) {
+        if (preg_match("/^\s*((http|https|ftp|mailto):[\p{L}_a-z0-9-:\.\*\/%#;!@\?\+=~\|\,&\(\)\[\]]+)/iu", $url, $matches)) {
             return $matches[1];
         } else if (preg_match("/^\s*([\p{L}_a-z0-9-:\.\*\/%#!@\?\+=~\|\,&]+)/iu", $url, $matches)) {
             return $matches[1];

@@ -1,7 +1,8 @@
 {
     "name": "joyqi/hyper-down",
     "description": "A light weight markdown parser library",
-    "license": "BSD",
+    "keywords": ["markdown", "hyperdown", "segmentfault"],
+    "license": "BSD-4-Clause",
     "authors": [
         {
             "name": "joyqi",
@@ -9,7 +10,7 @@
         }
     ],
     "require": {
-		"php": ">=5.4.0",
+		"php": ">=7.1.0",
         "ext-mbstring": "*"
     },
 	"autoload": {
