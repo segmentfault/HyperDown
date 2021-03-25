@@ -539,7 +539,7 @@ class Parser
         // autolink url
         if ($enableAutoLink) {
             $text = preg_replace_callback(
-                "/(^|[^\"])((https?):[\p{L}_0-9-\.\/%#!@\?\+=~\|\,&\(\)\[\]\:]+)($|[^\"])/iu",
+                "/(^|[^\"])((https?):[\p{L}_a-z0-9-:\.\*\/%#;!@\?\+=~\|\,&\(\)\[\]]+)/iu",
                 function ($matches) use ($self) {
                     $link = $self->call('parseLink', $matches[2]);
                     return "{$matches[1]}<a href=\"{$matches[2]}\">{$link}</a>{$matches[4]}";
@@ -1654,7 +1654,7 @@ class Parser
      */
     public function cleanUrl($url)
     {
-        if (preg_match("/^\s*((http|https|ftp|mailto):[\p{L}_a-z0-9-:\.\*\/%#;!@\?\+=~\|\,&\(\)\[\]\:]+)/iu", $url, $matches)) {
+        if (preg_match("/^\s*((http|https|ftp|mailto):[\p{L}_a-z0-9-:\.\*\/%#;!@\?\+=~\|\,&\(\)\[\]]+)/iu", $url, $matches)) {
             return $matches[1];
         } else if (preg_match("/^\s*([\p{L}_a-z0-9-:\.\*\/%#!@\?\+=~\|\,&]+)/iu", $url, $matches)) {
             return $matches[1];
