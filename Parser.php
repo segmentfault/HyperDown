@@ -695,8 +695,8 @@ class Parser
     {
         if ($this->isBlock('list') && !preg_match("/^\s*\[((?:[^\]]|\\]|\\[)+?)\]:\s*(.+)$/", $line)) {
             if ($state['empty'] <= 1
-                && preg_match("/^(\s+)/", $line, $matches)
-                && strlen($matches[1]) > $block[3]) {
+                && preg_match("/^(\s*)\S+/", $line, $matches)
+                && strlen($matches[1]) >= ($block[3] + $state['empty'])) {
 
                 $state['empty'] = 0;
                 $this->setBlock($key);
@@ -1583,7 +1583,7 @@ class Parser
      * @param int $start
      * @return string
      */
-    private function parseNormal(array $lines, $inline = false, $start)
+    private function parseNormal(array $lines, $inline, $start)
     {
         foreach ($lines as $key => &$line) {
             $line = $this->parseInline($line);
@@ -1594,7 +1594,10 @@ class Parser
         }
 
         $str = trim(implode("\n", $lines));
-        $str = preg_replace("/(\n\s*){2,}/", "</p><p>", $str);
+        $str = preg_replace_callback("/(\n\s*){2,}/", function () use (&$inline) {
+            $inline = false;
+            return "</p><p>";
+        }, $str);
         $str = preg_replace("/\n/", "<br>", $str);
 
         return preg_match("/^\s*$/", $str) ? '' : ($inline ? $str : "<p>{$str}</p>");
