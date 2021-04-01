@@ -146,7 +146,7 @@ class Parser
         });
 
         foreach ($this->blockParsers as $parser) {
-            list ($name) = $parser;
+            [$name] = $parser;
 
             if (isset($parser[2])) {
                 $this->_parsers[$name] = $parser[2];
@@ -258,7 +258,7 @@ class Parser
         }
 
         foreach ($blocks as $block) {
-            list ($type, $start, $end, $value) = $block;
+            [$type, $start, $end, $value] = $block;
             $extract = array_slice($lines, $start, $end - $start + 1);
             $method = 'parse' . ucfirst($type);
 
@@ -542,7 +542,7 @@ class Parser
                 "/(^|[^\"])((https?):[\p{L}_a-z0-9-:\.\*\/%#;!@\?\+=~\|\,&\(\)\[\]]+)/iu",
                 function ($matches) use ($self) {
                     $link = $self->call('parseLink', $matches[2]);
-                    return "{$matches[1]}<a href=\"{$matches[2]}\">{$link}</a>{$matches[4]}";
+                    return "{$matches[1]}<a href=\"{$matches[2]}\">{$link}</a>";
                 },
                 $text
             );
@@ -696,7 +696,7 @@ class Parser
         if ($this->isBlock('list') && !preg_match("/^\s*\[((?:[^\]]|\\]|\\[)+?)\]:\s*(.+)$/", $line)) {
             if ($state['empty'] <= 1
                 && preg_match("/^(\s*)\S+/", $line, $matches)
-                && strlen($matches[1]) >= ($block[3] + $state['empty'])) {
+                && strlen($matches[1]) >= ($block[3][0] + $state['empty'])) {
 
                 $state['empty'] = 0;
                 $this->setBlock($key);
@@ -711,12 +711,17 @@ class Parser
         if (preg_match("/^(\s*)((?:[0-9]+\.)|\-|\+|\*)\s+/i", $line, $matches)) {
             $space = strlen($matches[1]);
             $state['empty'] = 0;
+            $type = false !== strpos('+-*', $matches[2]) ? 'ul' : 'ol';
 
             // opened
             if ($this->isBlock('list')) {
-                $this->setBlock($key, $space);
+                if ($space < $block[3][0] || ($space == $block[3][0] && $type != $block[3][1])) {
+                    $this->startBlock('list', $key, [$space, $type]);
+                } else {
+                    $this->setBlock($key);
+                }
             } else {
-                $this->startBlock('list', $key, $space);
+                $this->startBlock('list', $key, [$space, $type]);
             }
 
             return false;
@@ -1181,7 +1186,7 @@ class Parser
             $prevBlock = isset($blocks[$key - 1]) ? $blocks[$key - 1] : NULL;
             $nextBlock = isset($blocks[$key + 1]) ? $blocks[$key + 1] : NULL;
 
-            list ($type, $from, $to) = $block;
+            [$type, $from, $to] = $block;
 
             if ('pre' == $type) {
                 $isEmpty = array_reduce(
@@ -1203,10 +1208,12 @@ class Parser
 
                 if ($from == $to && preg_match("/^\s*$/", $lines[$from])
                     && !empty($prevBlock) && !empty($nextBlock)) {
-                    if ($prevBlock[0] == $nextBlock[0] && in_array($prevBlock[0], $types)) {
+                    if ($prevBlock[0] == $nextBlock[0] && in_array($prevBlock[0], $types)
+                        && ($prevBlock[0] != 'list'
+                            || ($prevBlock[3][0] == $nextBlock[3][0] && $prevBlock[3][1] == $nextBlock[3][1]))) {
                         // combine 3 blocks
                         $blocks[$key - 1] = array(
-                            $prevBlock[0],  $prevBlock[1],  $nextBlock[2],  NULL
+                            $prevBlock[0],  $prevBlock[1],  $nextBlock[2], $prevBlock[3] ?? null
                         );
                         array_splice($blocks, $key, 2);
 
@@ -1234,7 +1241,7 @@ class Parser
      */
     private function parseCode(array $lines, array $parts, $start)
     {
-        list ($blank, $lang) = $parts;
+        [$blank, $lang] = $parts;
         $lang = trim($lang);
         $count = strlen($blank);
 
@@ -1243,7 +1250,7 @@ class Parser
         } else {
             $parts = explode(':', $lang);
             if (count($parts) > 1) {
-                list ($lang, $rel) = $parts;
+                [$lang, $rel] = $parts;
                 $lang = trim($lang);
                 $rel = trim($rel);
             }
@@ -1383,80 +1390,25 @@ class Parser
     private function parseList(array $lines, $value, $start)
     {
         $html = '';
-        $minSpace = 99999;
-        $secondMinSpace = 99999;
-        $found = false;
-        $secondFound = false;
+        [$space, $type] = $value;
         $rows = array();
+        $last = 0;
 
-        // count levels
         foreach ($lines as $key => $line) {
-            if (preg_match("/^(\s*)((?:[0-9]+\.?)|\-|\+|\*)(\s+)(.*)$/i", $line, $matches)) {
-                $space = strlen($matches[1]);
-                $type = false !== strpos('+-*', $matches[2]) ? 'ul' : 'ol';
-                $minSpace = min($space, $minSpace);
-                $found = true;
-
-                if ($space > 0) {
-                    $secondMinSpace = min($space, $secondMinSpace);
-                    $secondFound = true;
-                }
-
-                $rows[] = array($space, $type, $line, $matches[4]);
+            if (preg_match("/^(\s{" . $space . "})((?:[0-9]+\.?)|\-|\+|\*)(\s+)(.*)$/i", $line, $matches)) {
+                $rows[] = [$matches[4]];
+                $last = count($rows) - 1;
             } else {
-                $rows[] = $line;
-
-                if (preg_match("/^(\s*)/", $line, $matches)) {
-                    $space = strlen($matches[1]);
-
-                    if ($space > 0) {
-                        $secondMinSpace = min($space, $secondMinSpace);
-                        $secondFound = true;
-                    }
-                }
+                $rows[$last][] = preg_replace("/^\s{" . $space . "}/", '', $line);
             }
         }
 
-        $minSpace = $found ? $minSpace : 0;
-        $secondMinSpace = $secondFound ? $secondMinSpace : $minSpace;
-
-        $lastType = '';
-        $leftLines = array();
-        $leftStart = 0;
-
-        foreach ($rows as $key => $row) {
-            if (is_array($row)) {
-                list ($space, $type, $line, $text) = $row;
-
-                if ($space != $minSpace) {
-                    $leftLines[] = preg_replace("/^\s{" . $secondMinSpace . "}/", '', $line);
-                } else {
-                    if (!empty($leftLines)) {
-                        $html .= "<li>" . $this->parse(implode("\n", $leftLines), true, $start + $leftStart) . "</li>";
-                    }
-
-                    if ($lastType != $type) {
-                        if (!empty($lastType)) {
-                            $html .= "</{$lastType}>";
-                        }
-
-                        $html .= "<{$type}>";
-                    }
-
-                    $leftStart = $key;
-                    $leftLines = array($text);
-                    $lastType = $type;
-                }
-            } else {
-                $leftLines[] = preg_replace("/^\s{" . $secondMinSpace . "}/", '', $row);
-            }
+        foreach ($rows as $row) {
+            $html .= "<li>" . $this->parse(implode("\n", $row), true, $start) . "</li>";
+            $start += count($row);
         }
 
-        if (!empty($leftLines)) {
-            $html .= "<li>" . $this->parse(implode("\n", $leftLines), true, $start + $leftStart) . "</li></{$lastType}>";
-        }
-
-        return $html;
+        return "<{$type}>" . $html . "</{$type}>";
     }
 
     /**
@@ -1467,7 +1419,7 @@ class Parser
      */
     private function parseTable(array $lines, array $value, $start)
     {
-        list ($ignores, $aligns) = $value;
+        [$ignores, $aligns] = $value;
         $head = count($ignores) > 0 && array_sum($ignores) > 0;
 
         $html = '<table>';
@@ -1530,7 +1482,7 @@ class Parser
                     . '" data-id="' . $this->_uniqid . '"' : '') . '>';
 
             foreach ($columns as $key => $column) {
-                list ($num, $text) = $column;
+                [$num, $text] = $column;
                 $tag = $head ? 'th' : 'td';
 
                 $html .= "<{$tag}";
@@ -1612,7 +1564,7 @@ class Parser
      */
     private function parseFootnote(array $lines, array $value)
     {
-        list($space, $note) = $value;
+        [$space, $note] = $value;
         $index = array_search($note, $this->_footnotes);
 
         if (false !== $index) {
