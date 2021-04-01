@@ -311,7 +311,7 @@ class Parser
     /**
      * @param array $lines
      * @param $start
-     * @return string
+     * @return string[]
      */
     public function markLines(array $lines, $start)
     {
@@ -539,10 +539,10 @@ class Parser
         // autolink url
         if ($enableAutoLink) {
             $text = preg_replace_callback(
-                "/(^|[^\"])((https?):[\p{L}_a-z0-9-:\.\*\/%#;!@\?\+=~\|\,&\(\)\[\]]+)/iu",
+                "/(^|[^\"])((https?):\S+)($|[^\"])/i",
                 function ($matches) use ($self) {
                     $link = $self->call('parseLink', $matches[2]);
-                    return "{$matches[1]}<a href=\"{$matches[2]}\">{$link}</a>";
+                    return "{$matches[1]}<a href=\"{$matches[2]}\">{$link}</a>{$matches[4]}";
                 },
                 $text
             );
@@ -1394,7 +1394,7 @@ class Parser
         $rows = array();
         $last = 0;
 
-        foreach ($lines as $key => $line) {
+        foreach ($lines as $line) {
             if (preg_match("/^(\s{" . $space . "})((?:[0-9]+\.?)|\-|\+|\*)(\s+)(.*)$/i", $line, $matches)) {
                 $rows[] = [$matches[4]];
                 $last = count($rows) - 1;
@@ -1408,7 +1408,7 @@ class Parser
             $start += count($row);
         }
 
-        return "<{$type}>" . $html . "</{$type}>";
+        return "<{$type}>{$html}</{$type}>";
     }
 
     /**
@@ -1609,9 +1609,9 @@ class Parser
      */
     public function cleanUrl($url)
     {
-        if (preg_match("/^\s*((http|https|ftp|mailto):[\p{L}_a-z0-9-:\.\*\/%#;!@\?\+=~\|\,&\(\)\[\]]+)/iu", $url, $matches)) {
+        if (preg_match("/^\s*((http|https|ftp|mailto):\S+)/i", $url, $matches)) {
             return $matches[1];
-        } else if (preg_match("/^\s*([\p{L}_a-z0-9-:\.\*\/%#!@\?\+=~\|\,&]+)/iu", $url, $matches)) {
+        } else if (preg_match("/^\s*(\S+)/i", $url, $matches)) {
             return $matches[1];
         } else {
             return '#';

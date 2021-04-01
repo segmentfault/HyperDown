@@ -86,6 +86,10 @@ test('HyperDown', [
         'ol'    => [
             '1. list',
             '<ol><li>list</li></ol>'
+        ],
+        'mix'   => [
+            "1. list 1\n2. list 2\n * aaa\n * bbb\n3. list 3\n- dddd\n- cccc",
+            ''
         ]
     ],
     'bugfix' => [
@@ -101,8 +105,8 @@ test('HyperDown', [
     ],
     'url'=>[
         'exclamatory'=>[ // 感叹号
-            'http://sqlfiddle.com/#!9/ca126b/1',
-            '<p><a href="http://sqlfiddle.com/#!9/ca126b/1">http://sqlfiddle.com/#!9/ca126b/1</a></p>'
+            'http://sqlfiddle.com/#!9/ca126b/1中文 break',
+            '<p><a href="http://sqlfiddle.com/#!9/ca126b/1中文">http://sqlfiddle.com/#!9/ca126b/1中文</a> break</p>'
         ]
     ]
 ]);
