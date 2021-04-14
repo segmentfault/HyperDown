@@ -146,7 +146,7 @@ class Parser
         });
 
         foreach ($this->blockParsers as $parser) {
-            [$name] = $parser;
+            list($name) = $parser;
 
             if (isset($parser[2])) {
                 $this->_parsers[$name] = $parser[2];
@@ -258,7 +258,7 @@ class Parser
         }
 
         foreach ($blocks as $block) {
-            [$type, $start, $end, $value] = $block;
+            list($type, $start, $end, $value) = $block;
             $extract = array_slice($lines, $start, $end - $start + 1);
             $method = 'parse' . ucfirst($type);
 
@@ -694,14 +694,17 @@ class Parser
     private function parseBlockList($block, $key, $line, &$state)
     {
         if ($this->isBlock('list') && !preg_match("/^\s*\[((?:[^\]]|\\]|\\[)+?)\]:\s*(.+)$/", $line)) {
-            if ($state['empty'] <= 1
+            if (preg_match("/^(\s*)(~{3,}|`{3,})([^`~]*)$/i", $line)) {
+                // ignore code
+                return true;
+            } elseif ($state['empty'] <= 1
                 && preg_match("/^(\s*)\S+/", $line, $matches)
                 && strlen($matches[1]) >= ($block[3][0] + $state['empty'])) {
 
                 $state['empty'] = 0;
                 $this->setBlock($key);
                 return false;
-            } else if (preg_match("/^(\s*)$/", $line) && $state['empty'] == 0) {
+            } elseif (preg_match("/^(\s*)$/", $line) && $state['empty'] == 0) {
                 $state['empty'] ++;
                 $this->setBlock($key);
                 return false;
@@ -734,9 +737,10 @@ class Parser
      * @param $block
      * @param $key
      * @param $line
+     * @param $state
      * @return bool
      */
-    private function parseBlockCode($block, $key, $line)
+    private function parseBlockCode($block, $key, $line, $state)
     {
         if (preg_match("/^(\s*)(~{3,}|`{3,})([^`~]*)$/i", $line, $matches)) {
             if ($this->isBlock('code')) {
@@ -753,10 +757,9 @@ class Parser
                 $isAfterList = false;
 
                 if ($this->isBlock('list')) {
-                    $space = $block[3];
+                    $space = $block[3][0];
 
-                    $isAfterList = ($space > 0 && strlen($matches[1]) >= $space)
-                        || strlen($matches[1]) > $space;
+                    $isAfterList = strlen($matches[1]) >= $space + $state['empty'];
                 }
 
                 $this->startBlock('code', $key, array(
@@ -765,7 +768,7 @@ class Parser
             }
 
             return false;
-        } else if ($this->isBlock('code')) {
+        } elseif ($this->isBlock('code')) {
             $this->setBlock($key);
             return false;
         }
@@ -791,7 +794,7 @@ class Parser
                 }
 
                 return false;
-            } else if ($this->isBlock('shtml')) {
+            } elseif ($this->isBlock('shtml')) {
                 $this->setBlock($key);
                 return false;
             }
@@ -814,7 +817,7 @@ class Parser
                 if ($this->isBlock('ahtml')) {
                     $this->setBlock($key);
                     return false;
-                } else if (empty($matches[2]) || $matches[2] != '/') {
+                } elseif (empty($matches[2]) || $matches[2] != '/') {
                     $this->startBlock('ahtml', $key);
                     preg_match_all("/<({$this->_blockHtmlTags})(\s+[^>]*)?>/i", $line, $allMatches);
                     $lastMatch = $allMatches[1][count($allMatches[0]) - 1];
@@ -826,14 +829,14 @@ class Parser
                     }
                     return false;
                 }
-            } else if (!!$state['html'] && strpos($line, "</{$state['html']}>") !== false) {
+            } elseif (!!$state['html'] && strpos($line, "</{$state['html']}>") !== false) {
                 $this->setBlock($key)->endBlock();
                 $state['html'] = false;
                 return false;
-            } else if ($this->isBlock('ahtml')) {
+            } elseif ($this->isBlock('ahtml')) {
                 $this->setBlock($key);
                 return false;
-            } else if (preg_match("/^\s*<!\-\-(.*?)\-\->\s*$/", $line, $matches)) {
+            } elseif (preg_match("/^\s*<!\-\-(.*?)\-\->\s*$/", $line, $matches)) {
                 $this->startBlock('ahtml', $key)->endBlock();
                 return false;
             }
@@ -858,7 +861,7 @@ class Parser
             }
 
             return false;
-        } else if ($this->isBlock('math')) {
+        } elseif ($this->isBlock('math')) {
             $this->setBlock($key);
             return false;
         }
@@ -883,7 +886,7 @@ class Parser
             }
 
             return false;
-        } else if ($this->isBlock('pre') && preg_match("/^\s*$/", $line)) {
+        } elseif ($this->isBlock('pre') && preg_match("/^\s*$/", $line)) {
             $this->setBlock($key);
             return false;
         }
@@ -907,7 +910,7 @@ class Parser
             }
 
             return false;
-        } else if (preg_match("/<\/({$state['special']})>\s*$/i", $line, $matches)) {
+        } elseif (preg_match("/<\/({$state['special']})>\s*$/i", $line, $matches)) {
             $tag = strtolower($matches[1]);
 
             if ($this->isBlock('html', $tag)) {
@@ -916,7 +919,7 @@ class Parser
             }
 
             return false;
-        } else if ($this->isBlock('html')) {
+        } elseif ($this->isBlock('html')) {
             $this->setBlock($key);
             return false;
         }
@@ -974,7 +977,7 @@ class Parser
         if (preg_match("/^(\s*)>/", $line, $matches)) {
             if ($this->isBlock('list') && strlen($matches[1]) > 0) {
                 $this->setBlock($key);
-            } else if ($this->isBlock('quote')) {
+            } elseif ($this->isBlock('quote')) {
                 $this->setBlock($key);
             } else {
                 $this->startBlock('quote', $key);
@@ -1029,9 +1032,9 @@ class Parser
                     if (preg_match("/^\s*(:?)\-+(:?)\s*$/", $row, $matches)) {
                         if (!empty($matches[1]) && !empty($matches[2])) {
                             $align = 'center';
-                        } else if (!empty($matches[1])) {
+                        } elseif (!empty($matches[1])) {
                             $align = 'left';
-                        } else if (!empty($matches[2])) {
+                        } elseif (!empty($matches[2])) {
                             $align = 'right';
                         }
                     }
@@ -1145,14 +1148,14 @@ class Parser
             } else {
                 $this->startBlock('normal', $key);
             }
-        } else if ($this->isBlock('table')) {
+        } elseif ($this->isBlock('table')) {
             if (false !== strpos($line, '|')) {
                 $block[3][2] ++;
                 $this->setBlock($key, $block[3]);
             } else {
                 $this->startBlock('normal', $key);
             }
-        } else if ($this->isBlock('quote')) {
+        } elseif ($this->isBlock('quote')) {
             if (!preg_match("/^(\s*)$/", $line)) { // empty line
                 $this->setBlock($key);
             } else {
@@ -1186,7 +1189,7 @@ class Parser
             $prevBlock = isset($blocks[$key - 1]) ? $blocks[$key - 1] : NULL;
             $nextBlock = isset($blocks[$key + 1]) ? $blocks[$key + 1] : NULL;
 
-            [$type, $from, $to] = $block;
+            list($type, $from, $to) = $block;
 
             if ('pre' == $type) {
                 $isEmpty = array_reduce(
@@ -1241,7 +1244,7 @@ class Parser
      */
     private function parseCode(array $lines, array $parts, $start)
     {
-        [$blank, $lang] = $parts;
+        list($blank, $lang) = $parts;
         $lang = trim($lang);
         $count = strlen($blank);
 
@@ -1250,7 +1253,7 @@ class Parser
         } else {
             $parts = explode(':', $lang);
             if (count($parts) > 1) {
-                [$lang, $rel] = $parts;
+                list($lang, $rel) = $parts;
                 $lang = trim($lang);
                 $rel = trim($rel);
             }
@@ -1390,7 +1393,7 @@ class Parser
     private function parseList(array $lines, $value, $start)
     {
         $html = '';
-        [$space, $type] = $value;
+        list($space, $type) = $value;
         $rows = array();
         $last = 0;
 
@@ -1419,7 +1422,7 @@ class Parser
      */
     private function parseTable(array $lines, array $value, $start)
     {
-        [$ignores, $aligns] = $value;
+        list($ignores, $aligns) = $value;
         $head = count($ignores) > 0 && array_sum($ignores) > 0;
 
         $html = '<table>';
@@ -1464,7 +1467,7 @@ class Parser
                     $columns[$last] = array(
                         isset($columns[$last]) ? $columns[$last][0] + 1 : 1,  $row
                     );
-                } else if (isset($columns[$last])) {
+                } elseif (isset($columns[$last])) {
                     $columns[$last][0] ++;
                 } else {
                     $columns[0] = array(1, $row);
@@ -1473,7 +1476,7 @@ class Parser
 
             if ($head) {
                 $html .= '<thead>';
-            } else if ($body) {
+            } elseif ($body) {
                 $html .= '<tbody>';
             }
 
@@ -1482,7 +1485,7 @@ class Parser
                     . '" data-id="' . $this->_uniqid . '"' : '') . '>';
 
             foreach ($columns as $key => $column) {
-                [$num, $text] = $column;
+                list($num, $text) = $column;
                 $tag = $head ? 'th' : 'td';
 
                 $html .= "<{$tag}";
@@ -1501,7 +1504,7 @@ class Parser
 
             if ($head) {
                 $html .= '</thead>';
-            } else if ($body) {
+            } elseif ($body) {
                 $body = false;
             }
         }
@@ -1564,7 +1567,7 @@ class Parser
      */
     private function parseFootnote(array $lines, array $value)
     {
-        [$space, $note] = $value;
+        list($space, $note) = $value;
         $index = array_search($note, $this->_footnotes);
 
         if (false !== $index) {
@@ -1611,7 +1614,7 @@ class Parser
     {
         if (preg_match("/^\s*((http|https|ftp|mailto):\S+)/i", $url, $matches)) {
             return $matches[1];
-        } else if (preg_match("/^\s*(\S+)/i", $url, $matches)) {
+        } elseif (preg_match("/^\s*(\S+)/i", $url, $matches)) {
             return $matches[1];
         } else {
             return '#';
