@@ -1395,10 +1395,19 @@ class Parser
         $html = '';
         list($space, $type) = $value;
         $rows = array();
+        $suffix = '';
         $last = 0;
 
-        foreach ($lines as $line) {
+        foreach ($lines as $key => $line) {
             if (preg_match("/^(\s{" . $space . "})((?:[0-9]+\.?)|\-|\+|\*)(\s+)(.*)$/i", $line, $matches)) {
+                if ($type == 'ol' && $key == 0) {
+                    $start = intval($matches[2]);
+
+                    if ($start != 1) {
+                        $suffix = ' start="' . $start . '"';
+                    }
+                }
+
                 $rows[] = [$matches[4]];
                 $last = count($rows) - 1;
             } else {
@@ -1411,7 +1420,7 @@ class Parser
             $start += count($row);
         }
 
-        return "<{$type}>{$html}</{$type}>";
+        return "<{$type}{$suffix}>{$html}</{$type}>";
     }
 
     /**
