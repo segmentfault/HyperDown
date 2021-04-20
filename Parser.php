@@ -713,18 +713,19 @@ class Parser
 
         if (preg_match("/^(\s*)((?:[0-9]+\.)|\-|\+|\*)\s+/i", $line, $matches)) {
             $space = strlen($matches[1]);
+            $tab = strlen($matches[0]) - $space;
             $state['empty'] = 0;
             $type = false !== strpos('+-*', $matches[2]) ? 'ul' : 'ol';
 
             // opened
             if ($this->isBlock('list')) {
                 if ($space < $block[3][0] || ($space == $block[3][0] && $type != $block[3][1])) {
-                    $this->startBlock('list', $key, [$space, $type]);
+                    $this->startBlock('list', $key, [$space, $type, $tab]);
                 } else {
                     $this->setBlock($key);
                 }
             } else {
-                $this->startBlock('list', $key, [$space, $type]);
+                $this->startBlock('list', $key, [$space, $type, $tab]);
             }
 
             return false;
@@ -1393,7 +1394,7 @@ class Parser
     private function parseList(array $lines, $value, $start)
     {
         $html = '';
-        list($space, $type) = $value;
+        list($space, $type, $tab) = $value;
         $rows = array();
         $suffix = '';
         $last = 0;
@@ -1411,7 +1412,7 @@ class Parser
                 $rows[] = [$matches[4]];
                 $last = count($rows) - 1;
             } else {
-                $rows[$last][] = preg_replace("/^\s{" . $space . "}/", '', $line);
+                $rows[$last][] = preg_replace("/^\s{" . ($tab + $space) . "}/", '', $line);
             }
         }
 
