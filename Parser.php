@@ -741,10 +741,15 @@ class Parser
      * @param $state
      * @return bool
      */
-    private function parseBlockCode($block, $key, $line, $state)
+    private function parseBlockCode($block, $key, $line, &$state)
     {
         if (preg_match("/^(\s*)(~{3,}|`{3,})([^`~]*)$/i", $line, $matches)) {
             if ($this->isBlock('code')) {
+                if ($state['code'] != $matches[2]) {
+                    $this->setBlock($key);
+                    return false;
+                }
+
                 $isAfterList = $block[3][2];
 
                 if ($isAfterList) {
@@ -762,6 +767,8 @@ class Parser
 
                     $isAfterList = strlen($matches[1]) >= $space + $state['empty'];
                 }
+
+                $state['code'] = $matches[2];
 
                 $this->startBlock('code', $key, array(
                     $matches[1],  $matches[3],  $isAfterList
