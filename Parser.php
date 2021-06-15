@@ -539,7 +539,7 @@ class Parser
         // autolink url
         if ($enableAutoLink) {
             $text = preg_replace_callback(
-                "/(^|[^\"])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*))($|[^\"])/i",
+                "/(^|[^\"])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*))($|[^\"])/",
                 function ($matches) use ($self) {
                     $link = $self->call('parseLink', $matches[2]);
                     return "{$matches[1]}<a href=\"{$matches[2]}\">{$link}</a>{$matches[5]}";
@@ -1631,7 +1631,7 @@ class Parser
     {
         if (preg_match("/^\s*(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*))/", $url, $matches)) {
             return $matches[1];
-        } elseif (preg_match("/^\s*([-a-zA-Z0-9()@:%_\+.~#?&\/=]+)/i", $url, $matches)) {
+        } elseif (preg_match("/^\s*([-a-zA-Z0-9()@:%_\+.~#?&\/=]+)/", $url, $matches)) {
             return $matches[1];
         } else {
             return '#';
