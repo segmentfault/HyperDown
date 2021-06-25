@@ -477,9 +477,11 @@ class Parser
             function ($matches) use ($self) {
                 $escaped = htmlspecialchars($self->escapeBracket($matches[1]));
                 $url = $self->escapeBracket($matches[2]);
-                $url = $self->cleanUrl($url);
+                list ($url, $title) = $self->cleanUrl($url, true);
+                $title = empty($title)? $escaped : " title=\"{$title}\"";
+
                 return $self->makeHolder(
-                    "<img src=\"{$url}\" alt=\"{$escaped}\" title=\"{$escaped}\">"
+                    "<img src=\"{$url}\" alt=\"{$title}\" title=\"{$title}\">"
                 );
             },
             $text
@@ -507,8 +509,10 @@ class Parser
                     $self->escapeBracket($matches[1]),  '',  false, false
                 );
                 $url = $self->escapeBracket($matches[2]);
-                $url = $self->cleanUrl($url);
-                return $self->makeHolder("<a href=\"{$url}\">{$escaped}</a>");
+                list ($url, $title) = $self->cleanUrl($url, true);
+                $title = empty($title) ? '' : " title=\"{$title}\"";
+
+                return $self->makeHolder("<a href=\"{$url}\"{$title}>{$escaped}</a>");
             },
             $text
         );
@@ -1626,10 +1630,23 @@ class Parser
 
     /**
      * @param $url
-     * @return string
+     * @param bool $parseTitle
+     *
+     * @return mixed
      */
-    public function cleanUrl($url)
+    public function cleanUrl($url, $parseTitle = false)
     {
+        $title = null;
+
+        if ($parseTitle) {
+            $pos = strpos($url, ' ');
+
+            if ($pos !== false) {
+                $title = htmlspecialchars(trim(substr($url, $pos + 1), ' "\''));
+                $url = substr($url, 0, $pos);
+            }
+        }
+
         $url = preg_replace("/[\"'<>\s]/", '', $url);
 
         if (preg_match("/^(mailto:)?[_a-z0-9-\.\+]+@[_\w-]+\.[a-z]{2,}$/i", $url, $matches)) {
@@ -1642,7 +1659,7 @@ class Parser
             return '#';
         }
 
-        return $url;
+        return $parseTitle ? [$url, $title] : $url;
     }
 
     /**
