@@ -1637,6 +1637,7 @@ class Parser
     public function cleanUrl($url, $parseTitle = false)
     {
         $title = null;
+        $url = trim($url);
 
         if ($parseTitle) {
             $pos = strpos($url, ' ');
