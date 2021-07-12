@@ -701,7 +701,6 @@ class Parser
         if ($this->isBlock('list') && !preg_match("/^\s*\[((?:[^\]]|\\]|\\[)+?)\]:\s*(.+)$/", $line)) {
             if (preg_match("/^(\s*)(~{3,}|`{3,})([^`~]*)$/i", $line)) {
                 // ignore code
-                $state['empty'] = 0;
                 return true;
             } elseif ($state['empty'] <= 1
                 && preg_match("/^(\s*)\S+/", $line, $matches)
@@ -759,6 +758,7 @@ class Parser
                 $isAfterList = $block[3][2];
 
                 if ($isAfterList) {
+                    $state['empty'] = 0;
                     $this->combineBlock()
                         ->setBlock($key);
                 } else {
