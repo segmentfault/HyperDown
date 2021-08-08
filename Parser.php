@@ -418,7 +418,7 @@ class Parser
 
         // link
         $text = preg_replace_callback(
-            "/<(https?:\/\/.+|(?:mailto:)?[_a-z0-9-\.\+]+@[_\w-]+\.[a-z]{2,})>/i",
+            "/<(https?:\/\/.+|(?:mailto:)?[_a-z0-9-\.\+]+@[_\w-]+(?:\.[a-z]{2,})+)>/i",
             function ($matches) use ($self) {
                 $url = $self->cleanUrl($matches[1]);
                 $link = $self->call('parseLink', $url);
@@ -543,7 +543,7 @@ class Parser
         // autolink url
         if ($enableAutoLink) {
             $text = preg_replace_callback(
-                "/(^|[^\"])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*)|(?:mailto:)?[_a-z0-9-\.\+]+@[_\w-]+\.[a-z]{2,})($|[^\"])/",
+                "/(^|[^\"])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*)|(?:mailto:)?[_a-z0-9-\.\+]+@[_\w-]+(?:\.[a-z]{2,})+)($|[^\"])/",
                 function ($matches) use ($self) {
                     $url = $self->cleanUrl($matches[2]);
                     $link = $self->call('parseLink', $matches[2]);
@@ -1651,7 +1651,7 @@ class Parser
 
         $url = preg_replace("/[\"'<>\s]/", '', $url);
 
-        if (preg_match("/^(mailto:)?[_a-z0-9-\.\+]+@[_\w-]+\.[a-z]{2,}$/i", $url, $matches)) {
+        if (preg_match("/^(mailto:)?[_a-z0-9-\.\+]+@[_\w-]+(?:\.[a-z]{2,})+$/i", $url, $matches)) {
             if (empty($matches[1])) {
                 $url = 'mailto:' . $url;
             }
