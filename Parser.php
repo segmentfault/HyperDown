@@ -16,14 +16,14 @@ class Parser
      *
      * @var string
      */
-    public $_commonWhiteList = 'kbd|b|i|strong|em|sup|sub|br|code|del|a|hr|small';
+    private $_commonWhiteList = 'kbd|b|i|strong|em|sup|sub|br|code|del|a|hr|small';
 
     /**
      * html tags
      *
      * @var string
      */
-    public $_blockHtmlTags = 'p|div|h[1-6]|blockquote|pre|table|dl|ol|ul|address|form|fieldset|iframe|hr|legend|article|section|nav|aside|hgroup|header|footer|figcaption|svg|script|noscript';
+    private $_blockHtmlTags = 'p|div|h[1-6]|blockquote|pre|table|dl|ol|ul|address|form|fieldset|iframe|hr|legend|article|section|nav|aside|hgroup|header|footer|figcaption|svg|script|noscript';
 
     /**
      * _specialWhiteList
@@ -31,7 +31,7 @@ class Parser
      * @var mixed
      * @access private
      */
-    public $_specialWhiteList = array(
+    private $_specialWhiteList = array(
         'table'  =>  'table|tbody|thead|tfoot|tr|td|th'
     );
 
@@ -40,22 +40,22 @@ class Parser
      *
      * @var array
      */
-    public $_footnotes;
+    private $_footnotes;
 
     /**
      * @var bool
      */
-    public $_html = false;
+    private $_html = false;
 
     /**
      * @var bool
      */
-    public $_line = false;
+    private $_line = false;
 
     /**
      * @var array
      */
-    public $blockParsers = array(
+    private $blockParsers = array(
         array('code', 10),
         array('shtml', 20),
         array('pre', 30),
@@ -100,7 +100,7 @@ class Parser
      *
      * @var array
      */
-    public $_definitions;
+    private $_definitions;
 
     /**
      * @var array
@@ -297,7 +297,7 @@ class Parser
      * @param int $end
      * @return string
      */
-    public function markLine($start, $end = -1)
+    private function markLine($start, $end = -1)
     {
         if ($this->_line) {
             $end = $end < 0 ? $start : $end;
@@ -313,14 +313,13 @@ class Parser
      * @param $start
      * @return string[]
      */
-    public function markLines(array $lines, $start)
+    private function markLines(array $lines, $start)
     {
         $i = -1;
-        $self = $this;
 
-        return $this->_line ? array_map(function ($line) use ($self, $start, &$i) {
+        return $this->_line ? array_map(function ($line) use ($start, &$i) {
             $i ++;
-            return $self->markLine($start + $i) . $line;
+            return $this->markLine($start + $i) . $line;
         }, $lines) : $lines;
     }
 
@@ -328,7 +327,7 @@ class Parser
      * @param $html
      * @return string
      */
-    public function optimizeLines($html)
+    private function optimizeLines($html)
     {
         $last = 0;
 
@@ -351,7 +350,7 @@ class Parser
      * @param $value
      * @return mixed
      */
-    public function call($type, $value)
+    private function call($type, $value)
     {
         if (empty($this->_hooks[$type])) {
             return $value;
@@ -377,16 +376,15 @@ class Parser
      * @param bool $enableAutoLink
      * @return string
      */
-    public function parseInline($text, $whiteList = '', $clearHolders = true, $enableAutoLink = true)
+    private function parseInline($text, $whiteList = '', $clearHolders = true, $enableAutoLink = true)
     {
-        $self = $this;
         $text = $this->call('beforeParseInline', $text);
 
         // code
         $text = preg_replace_callback(
             "/(^|[^\\\])(`+)(.+?)\\2/",
-            function ($matches) use ($self) {
-                return  $matches[1] . $self->makeHolder(
+            function ($matches) {
+                return  $matches[1] . $this->makeHolder(
                     '<code>' . htmlspecialchars($matches[3]) . '</code>'
                 );
             },
@@ -396,8 +394,8 @@ class Parser
         // mathjax
         $text = preg_replace_callback(
             "/(^|[^\\\])(\\$+)(.+?)\\2/",
-            function ($matches) use ($self) {
-                return  $matches[1] . $self->makeHolder(
+            function ($matches) {
+                return  $matches[1] . $this->makeHolder(
                     $matches[2] . htmlspecialchars($matches[3]) . $matches[2]
                 );
             },
@@ -407,11 +405,11 @@ class Parser
         // escape
         $text = preg_replace_callback(
             "/\\\(.)/u",
-            function ($matches) use ($self) {
+            function ($matches) {
                 $prefix = preg_match("/^[-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]$/", $matches[1]) ? '' : '\\';
                 $escaped = htmlspecialchars($matches[1]);
                 $escaped = str_replace('$', '&dollar;', $escaped);
-                return  $self->makeHolder($prefix . $escaped);
+                return  $this->makeHolder($prefix . $escaped);
             },
             $text
         );
@@ -419,11 +417,11 @@ class Parser
         // link
         $text = preg_replace_callback(
             "/<(https?:\/\/.+|(?:mailto:)?[_a-z0-9-\.\+]+@[_\w-]+(?:\.[a-z]{2,})+)>/i",
-            function ($matches) use ($self) {
-                $url = $self->cleanUrl($matches[1]);
-                $link = $self->call('parseLink', $url);
+            function ($matches) {
+                $url = $this->cleanUrl($matches[1]);
+                $link = $this->call('parseLink', $url);
 
-                return $self->makeHolder(
+                return $this->makeHolder(
                     "<a href=\"{$url}\">{$link}</a>"
                 );
             },
@@ -433,21 +431,21 @@ class Parser
         // encode unsafe tags
         $text = preg_replace_callback(
             "/<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/i",
-            function ($matches) use ($self, $whiteList) {
-                if ($self->_html || false !== stripos(
-                    '|' . $self->_commonWhiteList . '|' . $whiteList . '|', '|' . $matches[2] . '|'
+            function ($matches) use ($whiteList) {
+                if ($this->_html || false !== stripos(
+                    '|' . $this->_commonWhiteList . '|' . $whiteList . '|', '|' . $matches[2] . '|'
                 )) {
-                    return $self->makeHolder($matches[0]);
+                    return $this->makeHolder($matches[0]);
                 } else {
-                    return $self->makeHolder(htmlspecialchars($matches[0]));
+                    return $this->makeHolder(htmlspecialchars($matches[0]));
                 }
             },
             $text
         );
 
         if ($this->_html) {
-            $text = preg_replace_callback("/<!\-\-(.*?)\-\->/", function ($matches) use ($self) {
-                return $self->makeHolder($matches[0]);
+            $text = preg_replace_callback("/<!\-\-(.*?)\-\->/", function ($matches) {
+                return $this->makeHolder($matches[0]);
             }, $text);
         }
 
@@ -456,15 +454,15 @@ class Parser
         // footnote
         $text = preg_replace_callback(
             "/\[\^((?:[^\]]|\\\\\]|\\\\\[)+?)\]/",
-            function ($matches) use ($self) {
-                $id = array_search($matches[1], $self->_footnotes);
+            function ($matches) {
+                $id = array_search($matches[1], $this->_footnotes);
 
                 if (false === $id) {
-                    $id = count($self->_footnotes) + 1;
-                    $self->_footnotes[$id] = $self->parseInline($matches[1], '', false);
+                    $id = count($this->_footnotes) + 1;
+                    $this->_footnotes[$id] = $this->parseInline($matches[1], '', false);
                 }
 
-                return $self->makeHolder(
+                return $this->makeHolder(
                     "<sup id=\"fnref-{$id}\"><a href=\"#fn-{$id}\" class=\"footnote-ref\">{$id}</a></sup>"
                 );
             },
@@ -474,13 +472,13 @@ class Parser
         // image
         $text = preg_replace_callback(
             "/!\[((?:[^\]]|\\\\\]|\\\\\[)*?)\]\(((?:[^\)]|\\\\\)|\\\\\()+?)\)/",
-            function ($matches) use ($self) {
-                $escaped = htmlspecialchars($self->escapeBracket($matches[1]));
-                $url = $self->escapeBracket($matches[2]);
-                list ($url, $title) = $self->cleanUrl($url, true);
+            function ($matches) {
+                $escaped = htmlspecialchars($this->escapeBracket($matches[1]));
+                $url = $this->escapeBracket($matches[2]);
+                list ($url, $title) = $this->cleanUrl($url, true);
                 $title = empty($title)? $escaped : " title=\"{$title}\"";
 
-                return $self->makeHolder(
+                return $this->makeHolder(
                     "<img src=\"{$url}\" alt=\"{$title}\" title=\"{$title}\">"
                 );
             },
@@ -489,14 +487,14 @@ class Parser
 
         $text = preg_replace_callback(
             "/!\[((?:[^\]]|\\\\\]|\\\\\[)*?)\]\[((?:[^\]]|\\\\\]|\\\\\[)+?)\]/",
-            function ($matches) use ($self) {
-                $escaped = htmlspecialchars($self->escapeBracket($matches[1]));
+            function ($matches) {
+                $escaped = htmlspecialchars($this->escapeBracket($matches[1]));
 
-                $result = isset( $self->_definitions[$matches[2]] ) ?
-                    "<img src=\"{$self->_definitions[$matches[2]]}\" alt=\"{$escaped}\" title=\"{$escaped}\">"
+                $result = isset( $this->_definitions[$matches[2]] ) ?
+                    "<img src=\"{$this->_definitions[$matches[2]]}\" alt=\"{$escaped}\" title=\"{$escaped}\">"
                     : $escaped;
 
-                return $self->makeHolder($result);
+                return $this->makeHolder($result);
             },
             $text
         );
@@ -504,30 +502,30 @@ class Parser
         // link
         $text = preg_replace_callback(
             "/\[((?:[^\]]|\\\\\]|\\\\\[)+?)\]\(((?:[^\)]|\\\\\)|\\\\\()+?)\)/",
-            function ($matches) use ($self) {
-                $escaped = $self->parseInline(
-                    $self->escapeBracket($matches[1]),  '',  false, false
+            function ($matches) {
+                $escaped = $this->parseInline(
+                    $this->escapeBracket($matches[1]),  '',  false, false
                 );
-                $url = $self->escapeBracket($matches[2]);
-                list ($url, $title) = $self->cleanUrl($url, true);
+                $url = $this->escapeBracket($matches[2]);
+                list ($url, $title) = $this->cleanUrl($url, true);
                 $title = empty($title) ? '' : " title=\"{$title}\"";
 
-                return $self->makeHolder("<a href=\"{$url}\"{$title}>{$escaped}</a>");
+                return $this->makeHolder("<a href=\"{$url}\"{$title}>{$escaped}</a>");
             },
             $text
         );
 
         $text = preg_replace_callback(
             "/\[((?:[^\]]|\\\\\]|\\\\\[)+?)\]\[((?:[^\]]|\\\\\]|\\\\\[)+?)\]/",
-            function ($matches) use ($self) {
-                $escaped = $self->parseInline(
-                    $self->escapeBracket($matches[1]),  '',  false
+            function ($matches) {
+                $escaped = $this->parseInline(
+                    $this->escapeBracket($matches[1]),  '',  false
                 );
-                $result = isset( $self->_definitions[$matches[2]] ) ?
-                    "<a href=\"{$self->_definitions[$matches[2]]}\">{$escaped}</a>"
+                $result = isset( $this->_definitions[$matches[2]] ) ?
+                    "<a href=\"{$this->_definitions[$matches[2]]}\">{$escaped}</a>"
                     : $escaped;
 
-                return $self->makeHolder($result);
+                return $this->makeHolder($result);
             },
             $text
         );
@@ -544,9 +542,9 @@ class Parser
         if ($enableAutoLink) {
             $text = preg_replace_callback(
                 "/(^|[^\"])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\b([-a-zA-Z0-9@:%_\+.~#?&\/=]*)|(?:mailto:)?[_a-z0-9-\.\+]+@[_\w-]+(?:\.[a-z]{2,})+)($|[^\"])/",
-                function ($matches) use ($self) {
-                    $url = $self->cleanUrl($matches[2]);
-                    $link = $self->call('parseLink', $matches[2]);
+                function ($matches) {
+                    $url = $this->cleanUrl($matches[2]);
+                    $link = $this->call('parseLink', $matches[2]);
                     return "{$matches[1]}<a href=\"{$url}\">{$link}</a>{$matches[5]}";
                 },
                 $text
@@ -565,15 +563,13 @@ class Parser
      * @param $text
      * @return mixed
      */
-    public function parseInlineCallback($text)
+    private function parseInlineCallback($text)
     {
-        $self = $this;
-
         $text = preg_replace_callback(
             "/(\*{3})(.+?)\\1/",
-            function ($matches) use ($self) {
+            function ($matches) {
                 return  '<strong><em>' .
-                    $self->parseInlineCallback($matches[2]) .
+                    $this->parseInlineCallback($matches[2]) .
                     '</em></strong>';
             },
             $text
@@ -581,9 +577,9 @@ class Parser
 
         $text = preg_replace_callback(
             "/(\*{2})(.+?)\\1/",
-            function ($matches) use ($self) {
+            function ($matches) {
                 return  '<strong>' .
-                    $self->parseInlineCallback($matches[2]) .
+                    $this->parseInlineCallback($matches[2]) .
                     '</strong>';
             },
             $text
@@ -591,9 +587,9 @@ class Parser
 
         $text = preg_replace_callback(
             "/(\*)(.+?)\\1/",
-            function ($matches) use ($self) {
+            function ($matches) {
                 return  '<em>' .
-                    $self->parseInlineCallback($matches[2]) .
+                    $this->parseInlineCallback($matches[2]) .
                     '</em>';
             },
             $text
@@ -601,9 +597,9 @@ class Parser
 
         $text = preg_replace_callback(
             "/(\s+|^)(_{3})(.+?)\\2(\s+|$)/",
-            function ($matches) use ($self) {
+            function ($matches) {
                 return  $matches[1] . '<strong><em>' .
-                    $self->parseInlineCallback($matches[3]) .
+                    $this->parseInlineCallback($matches[3]) .
                     '</em></strong>' . $matches[4];
             },
             $text
@@ -611,9 +607,9 @@ class Parser
 
         $text = preg_replace_callback(
             "/(\s+|^)(_{2})(.+?)\\2(\s+|$)/",
-            function ($matches) use ($self) {
+            function ($matches) {
                 return  $matches[1] . '<strong>' .
-                    $self->parseInlineCallback($matches[3]) .
+                    $this->parseInlineCallback($matches[3]) .
                     '</strong>' . $matches[4];
             },
             $text
@@ -621,9 +617,9 @@ class Parser
 
         $text = preg_replace_callback(
             "/(\s+|^)(_)(.+?)\\2(\s+|$)/",
-            function ($matches) use ($self) {
+            function ($matches) {
                 return  $matches[1] . '<em>' .
-                    $self->parseInlineCallback($matches[3]) .
+                    $this->parseInlineCallback($matches[3]) .
                     '</em>' . $matches[4];
             },
             $text
@@ -631,9 +627,9 @@ class Parser
 
         $text = preg_replace_callback(
             "/(~{2})(.+?)\\1/",
-            function ($matches) use ($self) {
+            function ($matches) {
                 return  '<del>' .
-                    $self->parseInlineCallback($matches[2]) .
+                    $this->parseInlineCallback($matches[2]) .
                     '</del>';
             },
             $text
@@ -1635,7 +1631,7 @@ class Parser
      *
      * @return mixed
      */
-    public function cleanUrl($url, $parseTitle = false)
+    private function cleanUrl($url, $parseTitle = false)
     {
         $title = null;
         $url = trim($url);
@@ -1668,7 +1664,7 @@ class Parser
      * @param $str
      * @return mixed
      */
-    public function escapeBracket($str)
+    private function escapeBracket($str)
     {
         return str_replace(
             array('\[', '\]', '\(', '\)'),  array('[', ']', '(', ')'),  $str
