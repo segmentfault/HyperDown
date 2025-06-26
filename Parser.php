@@ -515,7 +515,7 @@ class Parser
 
         // link
         $text = preg_replace_callback(
-            "/\[((?:[^\]]|\\\\\]|\\\\\[)+?)\]\(((?:[^\)]|\\\\\)|\\\\\()+?)\)/",
+            "/\[([^\]]*(?:\\\\.[^\]]*)*)\]\(([^)]*(?:\\\\.[^)]*)*)\)/",
             function ($matches) {
                 $escaped = $this->parseInline(
                     $this->escapeBracket($matches[1]), '', false, false
